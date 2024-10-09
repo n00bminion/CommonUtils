@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "CommonUtils"
+version = "2024.0"
+dynamic = ["dependencies"]
+requires-python = "==3.12.3"
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
