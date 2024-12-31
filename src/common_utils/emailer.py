@@ -1,17 +1,17 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from common_utils import defaults
 import os
 
 
-@defaults.apply_defaults(
-    sender=os.getenv("google_email_app_username"),
-    password=os.getenv("google_email_app_password"),
-)
-def send(sender: str, password: str, recipients_list: list, subject: str, message: str):
-    """ """
-    if not sender:
+def send(
+    username: str = os.getenv("google_email_app_username"),
+    password: str = os.getenv("google_email_app_password"),
+    recipients_list: list = None,
+    subject: str = None,
+    message: str = None,
+):
+    if not username:
         raise Exception(
             "Missing sender! Check for google_email_app_username in .env file or add a sender gmail email"
         )
@@ -23,7 +23,7 @@ def send(sender: str, password: str, recipients_list: list, subject: str, messag
 
     msg = MIMEMultipart()
     msg["Subject"] = subject
-    msg["From"] = sender
+    msg["From"] = username
 
     msg.attach(
         MIMEText(
@@ -47,5 +47,15 @@ def send(sender: str, password: str, recipients_list: list, subject: str, messag
             user=msg["From"],
             password=password,
         )
-        server.sendmail(from_addr=sender, to_addrs=recipients_list, msg=msg.as_string())
+        server.sendmail(
+            from_addr=username, to_addrs=recipients_list, msg=msg.as_string()
+        )
         server.quit()
+
+
+if __name__ == "__main__":
+    send(
+        recipients_list=["minhtr94@gmail.com"],
+        subject="testing",
+        message="test",
+    )

@@ -1,13 +1,7 @@
 import logging
-from common_utils import defaults
-import os
 
 
-@defaults.apply_defaults(
-    logging_level=os.getenv("logging_level"),
-    log_file_path=os.getenv("log_file_path"),
-)
-def create_logger(logging_level, log_file_path):
+def create_logger(logging_level=logging.CRITICAL, log_file_path="logging.log"):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging_level)
 
