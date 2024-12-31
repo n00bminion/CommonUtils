@@ -1,12 +1,16 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from common_utils.credentials import apply_default_sender_detail
+from common_utils import defaults
+import os
 
 
-@apply_default_sender_detail
+@defaults.apply_defaults(
+    sender=os.getenv("google_email_app_username"),
+    password=os.getenv("google_email_app_password"),
+)
 def send(sender: str, password: str, recipients_list: list, subject: str, message: str):
-
+    """ """
     if not sender:
         raise Exception(
             "Missing sender! Check for google_email_app_username in .env file or add a sender gmail email"
@@ -28,7 +32,7 @@ def send(sender: str, password: str, recipients_list: list, subject: str, messag
             <head>
             </head>
             <body>
-                <br>{"<br><br>".join(message)}<br>
+                <br>{"<br>".join(message)}<br>
             </body>
         </html>
         """,
