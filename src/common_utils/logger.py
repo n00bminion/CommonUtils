@@ -1,5 +1,7 @@
 import logging
 
+LOGGING_FMT = "%(levelname)s | File: %(pathname)s | Line No.: %(lineno)d | Method: %(funcName)s | Exec Time: %(asctime)s | Msg: %(message)s"
+
 
 def create_logger(
     logger_name="logging",
@@ -12,9 +14,7 @@ def create_logger(
     fileHandler = logging.FileHandler(log_file_path, mode="w")
     streamHandler = logging.StreamHandler()
 
-    formatter = logging.Formatter(
-        "%(levelname)s | Method: %(funcName)s | Line No.: %(lineno)d | Exec Time: %(asctime)s | Msg: %(message)s"
-    )
+    formatter = logging.Formatter(LOGGING_FMT)
     fileHandler.setFormatter(formatter)
     streamHandler.setFormatter(formatter)
     logger.addHandler(streamHandler)
