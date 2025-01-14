@@ -1,8 +1,12 @@
 import logging
 
 
-def create_logger(logging_level=logging.CRITICAL, log_file_path="logging.log"):
-    logger = logging.getLogger(__name__)
+def create_logger(
+    logger_name="logging",
+    logging_level=logging.CRITICAL,
+    log_file_path="logging.log",
+):
+    logger = logging.getLogger(logger_name)
     logger.setLevel(logging_level)
 
     fileHandler = logging.FileHandler(log_file_path, mode="w")
