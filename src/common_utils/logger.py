@@ -37,8 +37,7 @@ def create_logger(
     fileHandler = logging.FileHandler(log_file_path, mode="w")
     streamHandler = logging.StreamHandler()
 
-    # formatter = logging.Formatter(LOGGING_FMT)
-    fileHandler.setFormatter(CustomFormatter())
+    fileHandler.setFormatter(logging.Formatter(LOGGING_FMT))
     streamHandler.setFormatter(CustomFormatter())
     logger.addHandler(streamHandler)
     logger.addHandler(fileHandler)
