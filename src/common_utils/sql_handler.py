@@ -27,6 +27,9 @@ def _conditional_parser(conditionals):
     paramter for function the SQL.truncate_table()
     """
 
+    if conditionals == {}:
+        return ""
+
     def _parse(column, conditional):
 
         prefix = f" AND {column}"
