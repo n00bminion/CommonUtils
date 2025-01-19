@@ -1,6 +1,7 @@
 import sqlite3
 import pandas as pd
 import os
+from pathlib import Path
 
 
 def _connect_to_db(database_path, database_file):
@@ -13,7 +14,7 @@ def _connect_to_db(database_path, database_file):
     assert database_file, "Must include db file name"
 
     if os.path.isdir(database_path):
-        return sqlite3.connect(database_path + database_file)
+        return sqlite3.connect(Path(database_path, database_file))
 
 
 def _truncate_table_conditional_parser(conditional):
@@ -34,7 +35,11 @@ def _truncate_table_conditional_parser(conditional):
     return "WHERE" + "".join(col_val)[4:]
 
 
-def select_into_data_drame(query, database_path, database_file):
+def select_into_data_drame(
+    query,
+    database_path=os.getcwd(),
+    database_file=os.getenv("database_file"),
+):
     """
     Pass "select" query as argument and returns
     data in a DataFrame. Here's a simple example:
@@ -49,7 +54,11 @@ def select_into_data_drame(query, database_path, database_file):
     return df
 
 
-def exec_sql_uery(query, database_path, database_file):
+def exec_sql_uery(
+    query,
+    database_path=os.getcwd(),
+    database_file=os.getenv("database_file"),
+):
     """
     Used to execute query in the SQLite DB (i.e. Create table, drop table etc.).
     Below is an example, 1st query creating a test table and 2nd query is to drop test table (copy and try it out):
@@ -69,7 +78,11 @@ def exec_sql_uery(query, database_path, database_file):
 
 
 def insert_data_frame_to_sql(
-    dataframe, table_name, database_path, database_file, if_exists="append"
+    dataframe,
+    table_name,
+    database_path=os.getcwd(),
+    database_file=os.getenv("database_file"),
+    if_exists="append",
 ):
     """
     Insert data from dataframe source table and SQLite target table, column names need to match
@@ -88,7 +101,12 @@ def insert_data_frame_to_sql(
     dataframe.to_sql(name=table_name, con=conn, index=False, if_exists=if_exists)
 
 
-def truncate_table(table_name, database_path, database_file, conditional=None):
+def truncate_table(
+    table_name,
+    database_path=os.getcwd(),
+    database_file=os.getenv("database_file"),
+    conditional=None,
+):
     """
     Clear out/truncate the table
     Leave condition param empty if you want
@@ -115,7 +133,10 @@ def truncate_table(table_name, database_path, database_file, conditional=None):
     exec_sql_uery(query, database_path, database_file)
 
 
-def list_sql_objects(database_path, database_file):
+def list_sql_objects(
+    database_path=os.getcwd(),
+    database_file=os.getenv("database_file"),
+):
     """Return a list table of a objects in the DB"""
     return [
         i
@@ -127,7 +148,11 @@ def list_sql_objects(database_path, database_file):
     ]
 
 
-def get_sql_columns(table_name, database_path, database_file):
+def get_sql_columns(
+    table_name,
+    database_path=os.getcwd(),
+    database_file=os.getenv("database_file"),
+):
     """Return a list of columns for the required table"""
     assert isinstance(table_name, str), "table_name needs to a string"
     return [
