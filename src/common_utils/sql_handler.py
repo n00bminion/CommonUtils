@@ -178,7 +178,7 @@ def list_sql_objects(
         for i in select_into_dataframe(
             query=" SELECT name FROM sqlite_master WHERE type IN ('table','view') ORDER BY name",
             database_path=database_path,
-            database_path=database_file,
+            database_file=database_file,
         ).name
     ]
 
@@ -195,6 +195,6 @@ def get_sql_columns(
         for i in select_into_dataframe(
             query=f"SELECT * FROM {table} limit 0",
             database_path=database_path,
-            database_path=database_file,
+            database_file=database_file,
         ).columns
     ]
