@@ -1,6 +1,6 @@
 import logging
 
-LOGGING_FMT = "%(levelname)s | File: %(pathname)s | Line No.: %(lineno)d | Method: %(funcName)s | Exec Time: %(asctime)s | Msg: %(message)s"
+LOGGING_FMT = "%(levelname)s | File: %(filename)s | Line No.: %(lineno)d | Method: %(funcName)s | Exec Time: %(asctime)s | Msg: %(message)s"
 
 
 class CustomFormatter(logging.Formatter):
