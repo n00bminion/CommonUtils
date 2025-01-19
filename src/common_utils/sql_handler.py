@@ -92,7 +92,7 @@ def select_into_dataframe(
     return df
 
 
-def exec_sql_uery(
+def exec_sql_query(
     query,
     database_path=os.getcwd(),
     database_file=os.getenv("database_file"),
@@ -140,9 +140,9 @@ def insert_data_frame_to_sql(
 
 def truncate_table(
     table,
+    conditional=None,
     database_path=os.getcwd(),
     database_file=os.getenv("database_file"),
-    conditional=None,
 ):
     """
     Clear out/truncate the table
