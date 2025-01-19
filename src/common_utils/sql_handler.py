@@ -4,23 +4,6 @@ import os
 from pathlib import Path
 
 
-def _default_select(table, conditional):
-    return f" SELECT * FROM {table} {conditional}"
-
-
-def _connect_to_db(database_path, database_file):
-    """
-    Function to point to a DB file and access its content
-    (will also generate DB file if not exists)
-
-    """
-    ## if the path exists, connection will
-    assert database_file, "Must include db file name"
-
-    if os.path.isdir(database_path):
-        return sqlite3.connect(Path(database_path, database_file))
-
-
 def _conditional_parser(conditionals):
     """
     Function to parse the conditional
@@ -70,6 +53,23 @@ def _conditional_parser(conditionals):
             ]
         )[4:]
     )
+
+
+def _default_select(table, conditional):
+    return f" SELECT * FROM {table} {_conditional_parser(conditional)}"
+
+
+def _connect_to_db(database_path, database_file):
+    """
+    Function to point to a DB file and access its content
+    (will also generate DB file if not exists)
+
+    """
+    ## if the path exists, connection will
+    assert database_file, "Must include db file name"
+
+    if os.path.isdir(database_path):
+        return sqlite3.connect(Path(database_path, database_file))
 
 
 def select_into_dataframe(
