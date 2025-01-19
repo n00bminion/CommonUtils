@@ -32,6 +32,10 @@ def _conditional_parser(conditionals):
         prefix = f" AND {column}"
 
         if isinstance(conditional, dict):
+
+            if not len(conditional):
+                return ""
+
             dict_conditional = []
             for key, value in conditional.items():
 
