@@ -4,6 +4,10 @@ import os
 from pathlib import Path
 
 
+def _default_select(table, conditional):
+    return f" SELECT * FROM {table} {conditional}"
+
+
 def _connect_to_db(database_path, database_file):
     """
     Function to point to a DB file and access its content
@@ -62,7 +66,9 @@ def _conditional_parser(conditionals):
 
 
 def select_into_dataframe(
-    query,
+    query=None,
+    table=None,
+    conditional=None,
     database_path=os.getcwd(),
     database_file=os.getenv("database_file"),
 ):
@@ -74,8 +80,14 @@ def select_into_dataframe(
 
     """
     conn = _connect_to_db(database_path, database_file)
-    assert bool(conn), "DB file directory doesn't exist"
+    if table and conditional and not query:
+        query = _default_select(table, conditional)
+
+    if not query:
+        raise Exception(f"query and/or {table=} and {conditional=} was not supplied")
+
     df = pd.read_sql_query(str(query), conn)
+
     conn.close()
     return df
 
@@ -97,7 +109,6 @@ def exec_sql_uery(
 
     """
     conn = _connect_to_db(database_path, database_file)
-    assert bool(conn), "DB file directory doesn't exist"
     conn.cursor().executescript(str(query))
     conn.commit()
     conn.close()
@@ -105,7 +116,7 @@ def exec_sql_uery(
 
 def insert_data_frame_to_sql(
     dataframe,
-    table_name,
+    table,
     database_path=os.getcwd(),
     database_file=os.getenv("database_file"),
     if_exists="append",
@@ -124,11 +135,11 @@ def insert_data_frame_to_sql(
     """
     conn = _connect_to_db(database_path, database_file)
     assert isinstance(dataframe, pd.DataFrame), "Use dataframe as data source"
-    dataframe.to_sql(name=table_name, con=conn, index=False, if_exists=if_exists)
+    dataframe.to_sql(name=table, con=conn, index=False, if_exists=if_exists)
 
 
 def truncate_table(
-    table_name,
+    table,
     database_path=os.getcwd(),
     database_file=os.getenv("database_file"),
     conditional=None,
@@ -142,7 +153,7 @@ def truncate_table(
     in the row that you would like to delete from
 
     Parameter
-        table_name <<str>>
+        table <<str>>
         comditional <<dict>>
 
     Example
@@ -153,7 +164,7 @@ def truncate_table(
         truncate_table('freetrade_security_raw',conditional)
     """
     conditional = "" if conditional == None else _conditional_parser(conditional)
-    query = " DELETE FROM {} {}".format(table_name, conditional)
+    query = " DELETE FROM {} {}".format(table, conditional)
     exec_sql_uery(query, database_path, database_file)
 
 
@@ -173,16 +184,16 @@ def list_sql_objects(
 
 
 def get_sql_columns(
-    table_name,
+    table,
     database_path=os.getcwd(),
     database_file=os.getenv("database_file"),
 ):
     """Return a list of columns for the required table"""
-    assert isinstance(table_name, str), "table_name needs to a string"
+    assert isinstance(table, str), "table needs to a string"
     return [
         i
         for i in select_into_dataframe(
-            """ SELECT * FROM {} limit 0""".format(table_name),
+            """ SELECT * FROM {} limit 0""".format(table),
             database_path,
             database_file,
         ).columns
