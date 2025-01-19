@@ -35,7 +35,7 @@ def _truncate_table_conditional_parser(conditional):
     return "WHERE" + "".join(col_val)[4:]
 
 
-def select_into_data_drame(
+def select_into_dataframe(
     query,
     database_path=os.getcwd(),
     database_file=os.getenv("database_file"),
@@ -140,7 +140,7 @@ def list_sql_objects(
     """Return a list table of a objects in the DB"""
     return [
         i
-        for i in select_into_data_drame(
+        for i in select_into_dataframe(
             """ SELECT name FROM sqlite_master WHERE type IN ('table','view') ORDER BY name""",
             database_path,
             database_file,
@@ -157,7 +157,7 @@ def get_sql_columns(
     assert isinstance(table_name, str), "table_name needs to a string"
     return [
         i
-        for i in select_into_data_drame(
+        for i in select_into_dataframe(
             """ SELECT * FROM {} limit 0""".format(table_name),
             database_path,
             database_file,
