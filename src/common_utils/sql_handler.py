@@ -165,7 +165,7 @@ def truncate_table(
     """
     conditional = "" if conditional == None else _conditional_parser(conditional)
     query = " DELETE FROM {} {}".format(table, conditional)
-    exec_sql_uery(query, database_path, database_file)
+    exec_sql_query(query, database_path, database_file)
 
 
 def list_sql_objects(
