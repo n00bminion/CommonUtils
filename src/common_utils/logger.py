@@ -5,6 +5,7 @@ LOGGING_FMT = "%(levelname)s | File: %(pathname)s | Line No.: %(lineno)d | Metho
 
 class CustomFormatter(logging.Formatter):
 
+    green = "\x1b[32m;20m"
     grey = "\x1b[38;20m"
     yellow = "\x1b[33;20m"
     red = "\x1b[31;20m"
@@ -13,7 +14,7 @@ class CustomFormatter(logging.Formatter):
     format = LOGGING_FMT
 
     FORMATS = {
-        logging.DEBUG: grey + format + reset,
+        logging.DEBUG: green + format + reset,
         logging.INFO: grey + format + reset,
         logging.WARNING: yellow + format + reset,
         logging.ERROR: red + format + reset,

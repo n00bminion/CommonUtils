@@ -26,8 +26,8 @@ def send(
     message,
     subject=None,
     recipients=None,
-    username=os.getenv("google_email_app_username"),
-    password=os.getenv("google_email_app_password"),
+    username=os.getenv("google_email_username"),
+    password=os.getenv("google_email_password"),
 ):
     raise NotImplementedError("Unsupported message type")
 
@@ -37,17 +37,17 @@ def _send_simple_string_message(
     message: str,
     subject: str = None,
     recipients: list = None,
-    username: str = os.getenv("google_email_app_username"),
-    password: str = os.getenv("google_email_app_password"),
+    username: str = os.getenv("google_email_username"),
+    password: str = os.getenv("google_email_password"),
 ):
     if not username:
         raise Exception(
-            "Missing sender! Check for google_email_app_username in .env file or add a sender gmail email"
+            "Missing sender! Check for google_email_username in .env file or add a sender gmail email"
         )
 
     if not password:
         raise Exception(
-            "Missing password! Check for google_email_app_password in .env file or add a password"
+            "Missing password! Check for google_email_password in .env file or add a password"
         )
 
     msg = MIMEMultipart()
@@ -82,17 +82,17 @@ def _send_mimemultipart_message(
     message: MIMEMultipart,
     subject: str = None,
     recipients: list = None,
-    username: str = os.getenv("google_email_app_username"),
-    password: str = os.getenv("google_email_app_password"),
+    username: str = os.getenv("google_email_username"),
+    password: str = os.getenv("google_email_password"),
 ):
     if not username:
         raise Exception(
-            "Missing sender! Check for google_email_app_username in .env file or add a sender gmail email"
+            "Missing sender! Check for google_email_username in .env file or add a sender gmail email"
         )
 
     if not password:
         raise Exception(
-            "Missing password! Check for google_email_app_password in .env file or add a password"
+            "Missing password! Check for google_email_password in .env file or add a password"
         )
 
     msg = message

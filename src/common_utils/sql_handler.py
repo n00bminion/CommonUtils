@@ -14,8 +14,6 @@ def _connect_to_db(database_path, database_file):
 
     if os.path.isdir(database_path):
         return sqlite3.connect(database_path + database_file)
-    else:
-        return None
 
 
 def _truncate_table_conditional_parser(conditional):
