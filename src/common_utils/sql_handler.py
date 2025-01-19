@@ -23,7 +23,7 @@ def _conditional_parser(conditionals):
     paramter for function the SQL.truncate_table()
     """
 
-    def parse(column, conditional):
+    def _parse(column, conditional):
 
         prefix = f" AND {column}"
 
@@ -53,7 +53,10 @@ def _conditional_parser(conditionals):
     return (
         "WHERE"
         + "".join(
-            [parse(column, conditional) for column, conditional in conditionals.items()]
+            [
+                _parse(column, conditional)
+                for column, conditional in conditionals.items()
+            ]
         )[4:]
     )
 
