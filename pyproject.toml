@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Common-Utils"
-version = "2025.4"
+version = "2025.5s"
 dynamic = ["dependencies"]
 requires-python = "==3.12.3"
 
