@@ -17,22 +17,45 @@ def _connect_to_db(database_path, database_file):
         return sqlite3.connect(Path(database_path, database_file))
 
 
-def _truncate_table_conditional_parser(conditional):
+def _conditional_parser(conditionals):
     """
     Function to parse the conditional
     paramter for function the SQL.truncate_table()
     """
-    col_val = [
-        (" AND " + i[0] + " IN (")
-        + (
-            "'" + "','".join(i[1]) + "')"
-            if isinstance(i[1], list)
-            else "'" + i[1] + "')"
-        )
-        for i in list(conditional.items())
-    ]
+
+    def parse(column, conditional):
+
+        prefix = f" AND {column}"
+
+        if isinstance(conditional, dict):
+            dict_conditional = []
+            for key, value in conditional.items():
+
+                if isinstance(value, str):
+                    value = f"'{value}'"
+
+                dict_conditional.append(f"{prefix} {key} {value}")
+
+                return " ".join(dict_conditional)
+
+        if isinstance(conditional, list):
+            if all((isinstance(item, int) for item in conditional)):
+                f'{prefix} IN ({",".join(map(str, conditional))})'
+
+            return f"{prefix} IN ('{"','".join(conditional)}')"
+
+        if isinstance(conditional, int):
+            return f"{prefix} = {conditional}"
+
+        return f"{prefix} = '{conditional}'"
+
     ## remove the first 'and '
-    return "WHERE" + "".join(col_val)[4:]
+    return (
+        "WHERE"
+        + "".join(
+            [parse(column, conditional) for column, conditional in conditionals.items()]
+        )[4:]
+    )
 
 
 def select_into_dataframe(
@@ -126,9 +149,7 @@ def truncate_table(
         }
         truncate_table('freetrade_security_raw',conditional)
     """
-    conditional = (
-        "" if conditional == None else _truncate_table_conditional_parser(conditional)
-    )
+    conditional = "" if conditional == None else _conditional_parser(conditional)
     query = " DELETE FROM {} {}".format(table_name, conditional)
     exec_sql_uery(query, database_path, database_file)
 
