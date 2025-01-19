@@ -84,7 +84,7 @@ def select_into_dataframe(
 
     """
     conn = _connect_to_db(database_path, database_file)
-    if table and conditional and not query:
+    if table and (conditional is not None) and not query:
         query = _default_select(table, conditional)
 
     if not query:
