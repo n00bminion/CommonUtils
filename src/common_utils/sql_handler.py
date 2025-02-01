@@ -11,8 +11,6 @@ class DatabaseConnection:
         self.database_path = kwargs.get("database_path", os.getcwd())
         self.database_file = kwargs.get("database_file", os.getenv("database_file"))
 
-        print(self.database_file)
-
         if self.database_path and self.database_file:
             self.connection = self._connect_to_db(
                 database_path=self.database_path, database_file=self.database_file
