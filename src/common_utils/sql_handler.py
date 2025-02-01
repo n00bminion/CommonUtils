@@ -14,7 +14,7 @@ class DatabaseConnection:
         print(self.database_file)
 
         if self.database_path and self.database_file:
-            self._connection = self._connect_to_db(
+            self.connection = self._connect_to_db(
                 database_path=self.database_path, database_file=self.database_file
             )
             return
@@ -36,10 +36,10 @@ class DatabaseConnection:
             return sqlite3.connect(Path(database_path, database_file))
 
     def __enter__(self):
-        return self._connection
+        return self
 
     def __exit__(self, type, value, tb):
-        self._connection.close()
+        self.connection.close()
 
     @staticmethod
     def _conditional_parser(conditionals):
@@ -113,7 +113,7 @@ class DatabaseConnection:
                 f"query and/or {table=} and {conditional=} was not supplied"
             )
 
-        df = pd.read_sql_query(str(query), self._connection)
+        df = pd.read_sql_query(str(query), self.connection)
 
         return df
 
@@ -130,8 +130,8 @@ class DatabaseConnection:
 
         """
 
-        self._connection.cursor().executescript(str(query))
-        self._connection.commit()
+        self.connection.cursor().executescript(str(query))
+        self.connection.commit()
 
     def insert_dataframe_to_sql(
         self,
@@ -153,7 +153,7 @@ class DatabaseConnection:
         """
         assert isinstance(dataframe, pd.DataFrame), "Use dataframe as data source"
         dataframe.to_sql(
-            name=table, con=self._connection, index=False, if_exists=if_exists
+            name=table, con=self.connection, index=False, if_exists=if_exists
         )
 
     def truncate_table(self, table, conditional=None):
