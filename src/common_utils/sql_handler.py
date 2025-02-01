@@ -133,7 +133,7 @@ class DatabaseConnection:
         self._connection.cursor().executescript(str(query))
         self._connection.commit()
 
-    def insert_data_frame_to_sql(
+    def insert_dataframe_to_sql(
         self,
         dataframe,
         table,
