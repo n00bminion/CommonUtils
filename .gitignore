@@ -1,4 +1,6 @@
 src/common_utils/__pycache__/*
+src/common_utils/_version.py
 .env
 .venv
 test*
+src/*.egg-info

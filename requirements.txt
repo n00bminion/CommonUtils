@@ -5,3 +5,4 @@ python-dotenv==1.0.1
 pytz==2024.2
 PyYAML==6.0.2
 six==1.17.0
+setuptools-scm==8.1.0
