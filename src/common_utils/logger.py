@@ -1,6 +1,6 @@
 import logging
 
-LOGGING_FMT = "%(asctime)s - %(levelname)s - %(filename)s @ %(lineno)d [%(funcName)s] - %(message)s"
+LOGGING_FMT = "%(asctime)s - %(levelname)s - %(filename)s @ %(lineno)d [ %(funcName)s ] - %(message)s"
 
 
 class CustomFormatter(logging.Formatter):
