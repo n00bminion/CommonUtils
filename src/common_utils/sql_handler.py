@@ -78,7 +78,7 @@ class DatabaseConnection:
                 return f"{prefix} = {conditional}"
 
             if isinstance(conditional, str):
-                if "in" in conditional.lower():
+                if "is" in conditional.lower():
                     return f"{prefix} {conditional}"
 
             return f"{prefix} = '{conditional}'"
