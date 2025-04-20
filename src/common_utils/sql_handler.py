@@ -77,6 +77,10 @@ class DatabaseConnection:
             if isinstance(conditional, int):
                 return f"{prefix} = {conditional}"
 
+            if isinstance(conditional, str):
+                if "in" in conditional.lower():
+                    return f"{prefix} {conditional}"
+
             return f"{prefix} = '{conditional}'"
 
         ## remove the first 'and '
