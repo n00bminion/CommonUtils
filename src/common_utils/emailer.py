@@ -1,8 +1,9 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 import os
-from functools import singledispatch
 
 
 def _send_email(from_addr, to_addrs, password, msg):
@@ -21,25 +22,16 @@ def _send_email(from_addr, to_addrs, password, msg):
         raise e
 
 
-@singledispatch
 def send(
-    message,
-    subject=None,
-    recipients=None,
-    username=os.getenv("google_email_username"),
-    password=os.getenv("google_email_password"),
-):
-    raise NotImplementedError("Unsupported message type")
-
-
-@send.register
-def _send_simple_string_message(
-    message: str,
+    str_message: MIMEText = None,
+    html_message: MIMEText = None,
     subject: str = None,
     recipients: list = None,
+    attachment_paths: list = None,
     username: str = os.getenv("google_email_username"),
     password: str = os.getenv("google_email_password"),
 ):
+
     if not username:
         raise Exception(
             "Missing sender! Check for google_email_username in .env file or add a sender gmail email"
@@ -50,13 +42,51 @@ def _send_simple_string_message(
             "Missing password! Check for google_email_password in .env file or add a password"
         )
 
+    if not str_message and not html_message:
+        raise Exception(
+            "No message provided! Please provide either a text or html message to send."
+        )
+
     msg = MIMEMultipart()
-    msg["Subject"] = subject
+    msg["Subject"] = subject or "No Subject Provided"
     msg["From"] = username
 
-    msg.attach(
-        MIMEText(
-            f"""\
+    if str_message:
+        msg.attach(MIMEText(str_message, "plain"))
+
+    if html_message:
+        msg.attach(MIMEText(html_message, "html"))
+
+    if attachment_paths:
+        for file in attachment_paths:
+            with open(file, "rb") as attachment:
+                # Add file as application/octet-stream
+                # Email client can usually download this automatically as attachment
+                part = MIMEBase("application", "octet-stream")
+                part.set_payload(attachment.read())
+
+            # Encode file in ASCII characters to send by email
+            encoders.encode_base64(part)
+
+            # Add header as key/value pair to attachment part
+            part.add_header(
+                "Content-Disposition",
+                f"attachment; filename= {file}",
+            )
+
+            # Add attachment to message and convert message to string
+            msg.attach(part)
+
+    _send_email(
+        from_addr=username,
+        to_addrs=recipients,
+        password=password,
+        msg=msg,
+    )
+
+
+def prepare_html_message(message: str):
+    return f"""\
         <html>
             <head>
             </head>
@@ -64,48 +94,12 @@ def _send_simple_string_message(
                 <br>{"<br>".join(message)}<br>
             </body>
         </html>
-        """,
-            "html",
-        )
-    )
-
-    _send_email(
-        from_addr=username,
-        to_addrs=recipients,
-        password=password,
-        msg=msg,
-    )
-
-
-@send.register
-def _send_mimemultipart_message(
-    message: MIMEMultipart,
-    subject: str = None,
-    recipients: list = None,
-    username: str = os.getenv("google_email_username"),
-    password: str = os.getenv("google_email_password"),
-):
-    if not username:
-        raise Exception(
-            "Missing sender! Check for google_email_username in .env file or add a sender gmail email"
-        )
-
-    if not password:
-        raise Exception(
-            "Missing password! Check for google_email_password in .env file or add a password"
-        )
-
-    msg = message
-    msg["Subject"] = subject
-    msg["From"] = username
-
-    _send_email(
-        from_addr=username,
-        to_addrs=recipients,
-        password=password,
-        msg=msg,
-    )
+        """
 
 
 if __name__ == "__main__":
-    send("test", subject="testing", recipients=["minhtr94@gmail.com"])  # this works
+    send(
+        html_message=prepare_html_message(["test"]),
+        subject="testing",
+        recipients=["minhtr94@hotmail.co.uk"],
+    )  # this works
