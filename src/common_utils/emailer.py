@@ -25,6 +25,7 @@ def _send_email(from_addr, to_addrs, password, msg):
 def send(
     str_message: MIMEText = None,
     html_message: MIMEText = None,
+    diy_message: MIMEMultipart = None,
     subject: str = None,
     recipients: list = None,
     attachment_paths: list = None,
@@ -42,13 +43,13 @@ def send(
             "Missing password! Check for google_email_password in .env file or add a password"
         )
 
-    if not str_message and not html_message:
+    if not str_message and not html_message and not diy_message:
         raise Exception(
-            "No message provided! Please provide either a text or html message to send."
+            "No message provided! Please provide either a text, html or diy (build your own) message to send."
         )
 
-    msg = MIMEMultipart()
-    msg["Subject"] = subject or "No Subject Provided"
+    msg = diy_message or MIMEMultipart()
+    msg["Subject"] = subject or f"Email From {username}"
     msg["From"] = username
 
     if str_message:
