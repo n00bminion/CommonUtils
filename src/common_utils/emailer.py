@@ -48,6 +48,11 @@ def send(
             "No message provided! Please provide either a text, html or diy (build your own) message to send."
         )
 
+    if diy_message and (str_message or html_message):
+        raise Exception(
+            "Cannot combine diy_message with str_message or html_message. Both str_message and html_message should be None if diy_message is provided."
+        )
+
     msg = diy_message or MIMEMultipart()
     msg["Subject"] = subject or f"Email From {username}"
     msg["From"] = username
