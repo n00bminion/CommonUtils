@@ -1,10 +1,10 @@
 import os
 import shutil
 from pathlib import Path
-import importlib
+import importlib.resources as pkg_resources
 
 GITHUB_WORKFLOW_DIR = Path(".github", "workflows")
-YAML_DIR = Path(importlib.resources.files(__name__), "yaml")
+YAML_DIR = Path(pkg_resources.files(__name__), "yaml")
 
 
 def add_github_action_folder():
