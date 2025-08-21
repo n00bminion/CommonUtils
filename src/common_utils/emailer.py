@@ -22,6 +22,30 @@ def _send_email(from_addr, to_addrs, password, msg):
         raise e
 
 
+def build_html_email_meesage(
+    style="",
+    body="",
+):
+    return (
+        "<!DOCTYPE html>"
+        "<html>"
+        "<head>"
+        f"""
+            <link rel="stylesheet" type="text/css" hs-webfonts="true" href="https://fonts.googleapis.com/css?family=Lato%7CLato:i,b,bi">
+            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+            {style}                
+            </style>
+        """
+        "</head>"
+        '<body bgcolor="#F5F8FA" style="width: 100%; font-family:Lato, sans-serif; font-size:18px; margin:0">'
+        f"{body}"
+        "</body>"
+        "</html>",
+    )
+
+
 def send(
     str_message: MIMEText = None,
     html_message: MIMEText = None,
@@ -89,23 +113,3 @@ def send(
         password=password,
         msg=msg,
     )
-
-
-def prepare_html_message(message: str):
-    return f"""\
-        <html>
-            <head>
-            </head>
-            <body>
-                <br>{"<br>".join(message)}<br>
-            </body>
-        </html>
-        """
-
-
-if __name__ == "__main__":
-    send(
-        html_message=prepare_html_message(["test"]),
-        subject="testing",
-        recipients=["minhtr94@hotmail.co.uk"],
-    )  # this works
