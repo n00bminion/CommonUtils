@@ -6,16 +6,23 @@ from email import encoders
 import os
 
 
-def _send_email(from_addr, to_addrs, password, msg):
+def _send_email(from_addr, to_addrs, password, msg, host="smtp.gmail.com", port=587):
     try:
-        with smtplib.SMTP(host="smtp.gmail.com", port=587) as server:
+        with smtplib.SMTP(
+            host=host,
+            port=port,
+        ) as server:
             server.starttls()
             server.ehlo()
             server.login(
                 user=msg["From"],
                 password=password,
             )
-            server.sendmail(from_addr=from_addr, to_addrs=to_addrs, msg=msg.as_string())
+            server.sendmail(
+                from_addr=from_addr,
+                to_addrs=to_addrs,
+                msg=msg.as_string(),
+            )
             server.quit()
 
     except Exception as e:

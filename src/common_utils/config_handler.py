@@ -3,7 +3,10 @@ import json
 from pathlib import Path
 import os
 
-_ALLOWED_CONFIG_FILE_EXTENSION = {".yaml": yaml.safe_load, ".json": json.load}
+_ALLOWED_CONFIG_FILE_EXTENSION = {
+    ".yaml": yaml.safe_load,
+    ".json": json.load,
+}
 
 
 def get_config(config_file):

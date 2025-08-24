@@ -23,8 +23,3 @@ def prepare_file_path(file_path):
     parent_dir.mkdir(parents=True, exist_ok=True)
 
     return save_path
-
-
-if __name__ == "__main__":
-    path = prepare_file_path(r"C:\Users\minht\Repo\Test\test_folder\test.r")
-    print(path)

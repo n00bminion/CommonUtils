@@ -1,0 +1,1 @@
+2025-08-23 17:09:07,644 - INFO - sql_handler.py @ 37 [ __new__ ] - <class '__main__.SqliteConnection'> derived with connection_engine = 'sqlite'
