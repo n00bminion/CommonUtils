@@ -11,6 +11,8 @@ class QueryParser:
         self._sqlparse_kwargs = dict(
             keyword_case="upper",
             use_space_around_operators=True,
+            reindent=True,
+            reindent_aligned=True,
         )
 
     def __call__(self, *args, **kwargs):
@@ -48,11 +50,14 @@ class QueryParser:
     # let's just stick to sql string, dictionary is wayyyyyyy to complicated for this
     @parse.register
     def _parse_string(self, query: str):
-        # strip leading and trailing whitespaces
-        query = query.strip()
-        # remove double whitespace in between
-        query = re.sub(r"\s{2,}", " ", query)
-        return sqlparse.format(query, **self._sqlparse_kwargs)
 
-    def validate_dataframe_output(self):
-        return
+        return sqlparse.format(
+            re.sub(
+                # remove double whitespace in between
+                r"\s{2,}",
+                " ",
+                # strip leading and trailing whitespaces
+                query.strip(),
+            ),
+            **self._sqlparse_kwargs,
+        )

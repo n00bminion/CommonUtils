@@ -1,3 +1,2 @@
-from common_utils import file_handler
 from common_utils.sql_handler.connection import DatabaseConnection
 from common_utils.sql_handler.query import QueryParser

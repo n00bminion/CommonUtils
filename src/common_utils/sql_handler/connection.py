@@ -7,7 +7,7 @@ import sqlite3
 import sqlalchemy
 
 # local module
-from common_utils import file_handler
+from common_utils.io_handler import file
 from common_utils.sql_handler.query import QueryParser
 
 
@@ -46,6 +46,7 @@ class DatabaseConnection(ABC):
     """
 
     _registry = {}
+    _resource_path = "sql_handler/resource"
 
     def __init_subclass__(cls, connection_engine, **kwargs):
         # register the child classes
@@ -56,6 +57,7 @@ class DatabaseConnection(ABC):
         # generate new class based on connection_engine
         try:
             obj = cls._registry[connection_engine]
+            obj.connection_engine = connection_engine
             return super().__new__(obj)
         except KeyError as e:
             raise ValueError(
@@ -166,51 +168,23 @@ class PostgresConnection(DatabaseConnection, connection_engine="postgres"):
             if_exists=if_exixts,
         )
 
-    _ALL_OBJECT_QUERY = """
-        select
-            n.nspname as schema_name
-            ,c.relname as object_name
-            ,r.rolname as object_owner
-            ,case c.relkind
-                when 'r' then 'TABLE'
-                when 'm' then 'MATERIALIZED_VIEW'
-                when 'i' then 'INDEX'
-                when 'S' then 'SEQUENCE'
-                when 'v' then 'VIEW'
-                when 'c' then 'TYPE'
-                else c.relkind::text
-            end as object_type
-        from pg_class c
-        join pg_roles r
-        on r.oid = c.relowner
-        join pg_namespace n
-        on n.oid = c.relnamespace
-        where n.nspname not in ('information_schema', 'pg_catalog')
-            and n.nspname not like 'pg_toast%'
-        order by n.nspname, c.relname;
-    """
-
     def get_all_objects(self):
-        self.select_into_dataframe(self._ALL_OBJECT_QUERY)
-
-    _OBJECT_DETAILS = """
-        SELECT attrelid::regclass AS tbl
-        , attname            AS col
-        , atttypid::regtype  AS datatype
-        -- more attributes?
-        FROM   pg_attribute
-        WHERE  attrelid = '{schema}.{table}'::regclass  -- table name optionally schema-qualified
-        AND    attnum > 0
-        AND    NOT attisdropped
-        ORDER  BY attnum;
-    """
-
-    def get_table_details(self, table, schema="public"):
+        sql = file._read_internal_resource(
+            f"{self._resource_path}/{self.connection_engine}/get_all_objects.sql"
+        )
         return self.select_into_dataframe(
-            self._OBJECT_DETAILS.format(
-                schema=schema,
-                table=table,
-            )
+            sql,
+        )
+
+    def get_table_details(self, table_name, schema_name):
+        sql = file._read_internal_resource(
+            f"{self._resource_path}/{self.connection_engine}/get_object_details.sql"
+        ).format(
+            schema=schema_name,
+            table_name=table_name,
+        )
+        return self.select_into_dataframe(
+            sql,
         )
 
 
@@ -222,9 +196,7 @@ class SqliteConnection(DatabaseConnection, connection_engine="sqlite"):
         *args,
         **kwargs,
     ):
-        self.database_file_path = file_handler.prepare_file_path(
-            Path(database_file_path)
-        )
+        self.database_file_path = file.prepare_file_path(Path(database_file_path))
 
     @property
     def database_connection(self):
@@ -255,19 +227,19 @@ class SqliteConnection(DatabaseConnection, connection_engine="sqlite"):
             if_exists=if_exixts,
         )
 
-    _ALL_TABLE_QUERY = (
-        "SELECT * "
-        "FROM sqlite_master "
-        "WHERE type IN ('table','view') "
-        "ORDER BY name"
-    )
-
     def get_all_objects(self):
-        return self.select_into_dataframe(self._ALL_TABLE_QUERY)
-
-    _OBJECT_DETAILS = "SELECT * FROM PRAGMA_TABLE_INFO( '{table_name}' )"
+        sql = file._read_internal_resource(
+            f"{self._resource_path}/{self.connection_engine}/get_all_objects.sql"
+        )
+        return self.select_into_dataframe(sql)
 
     def get_table_details(self, table_name):
+
+        sql = file._read_internal_resource(
+            f"{self._resource_path}/{self.connection_engine}/get_object_details.sql"
+        ).format(
+            table_name=table_name,
+        )
         return self.select_into_dataframe(
-            self._OBJECT_DETAILS.format(table_name=table_name)
+            sql,
         )
