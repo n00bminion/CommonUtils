@@ -3,6 +3,8 @@ import inspect
 import re
 import sqlparse
 
+from common_utils.sql_handler._query_transformer import _transform_kv_to_clause
+
 
 class QueryParser:
     def __init__(self, function):
@@ -47,7 +49,6 @@ class QueryParser:
     def parse(self, query):
         raise NotImplementedError(f"Unable to parse query type: {type(query)}")
 
-    # let's just stick to sql string, dictionary is wayyyyyyy to complicated for this
     @parse.register
     def _parse_string(self, query: str):
 
@@ -59,5 +60,84 @@ class QueryParser:
                 # strip leading and trailing whitespaces
                 query.strip(),
             ),
+            **self._sqlparse_kwargs,
+        )
+
+    # using dictionary to filter simple query rather
+    @parse.register
+    def _parse_dict(self, query: dict):
+        # top level should have just 2 keys, table and filter
+        table = "table"
+        columns = "columns"
+        filters = "filters"
+        allowed_key = [table, columns, filters]
+
+        # check if all the keys are there, even if "select * ", still expects filter to be an empty dict
+        assert sorted(list(query)) == (
+            sorted(allowed_key)
+        ), f"Only a dictionary with {len(allowed_key)} keys is allowed. The keys are {allowed_key}. The passed in keys are {list(query)}"
+
+        # table name is only allowed to be a string
+        table_name = query[table]
+        assert (
+            type(table_name) == str
+        ), f"The value for {table} is {table_name}. This is expected to be a str but instead got {type(table_name)}"
+
+        # need to pass in list or tuple of columns
+        columns_iter = query[columns]
+        assert (type(columns_iter) == list) or (
+            type(columns_iter) == tuple
+        ), f"The value for {columns} is {columns_iter}. This is expected to be a list or tuple but instead got {type(columns_iter)}. If choosing all columns, use an empty list or tuple"
+
+        # expect dictionary for filter
+        filter_dict = query[filters]
+        assert (
+            type(filter_dict) == dict
+        ), f"The value for {filters} is {filter_dict}. This is expected to be a dict but instead got {type(filter_dict)}. If there's no filtering, use an empty dict"
+
+        # from this point on, we can construct query
+        select_columns_from_table = f"SELECT {', '.join(columns_iter) if columns_iter else '*'} FROM  {table_name}"
+
+        if not filter_dict:
+            # return if no filtering
+            return sqlparse.format(
+                select_columns_from_table,
+                **self._sqlparse_kwargs,
+            )
+
+        # all the keys in this nested filter dict represent columns and need to be str also
+        non_str_columns = [
+            column for column in filter_dict.keys() if type(column) != str
+        ]
+        assert (
+            len(non_str_columns) == 0
+        ), f"Keys in {filter} represent column names and should be of type str"
+
+        # transform the filter into actual list of sql clauses
+
+        sql_clause_list = [
+            _transform_kv_to_clause(filter_clause, column)
+            for column, filter_clause in filter_dict.items()
+        ]
+
+        for index, clause in enumerate(sql_clause_list):
+            if type(clause) == str:
+                sql_clause_list[index] = f" AND {clause}"
+            elif type(clause) == list:
+                sql_clause_list[index] = " AND ".join(clause)
+
+        final_query = select_columns_from_table + " WHERE " + " ".join(sql_clause_list)
+
+        where_and_pattern = r"\bwhere\s+and\b"
+        if re.search(where_and_pattern, final_query, re.IGNORECASE):
+            final_query = re.sub(
+                pattern=where_and_pattern,
+                repl="WHERE ",
+                string=final_query,
+                flags=re.IGNORECASE,
+            )
+
+        return sqlparse.format(
+            final_query,
             **self._sqlparse_kwargs,
         )
