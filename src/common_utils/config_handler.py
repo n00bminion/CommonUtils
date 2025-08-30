@@ -17,16 +17,24 @@ def get_config(config_file):
     """
     # expect config file to be in config folder
     original_path = Path(config_file)
-    default_path = Path(f"config/{original_path.name}")
-    try:
-        return read_file(default_path)
-    except FileNotFoundError:
-        print(
-            f"Attempted to find file at '{default_path}' but failed. Now trying to read file using path passed in."
-        )
+    file_name = original_path.name
 
-    # or otherwise just pass in relative path to the file from cwd
+    for possible_path in (
+        # config folder in top level
+        Path(f"config/{file_name}"),
+        # config folder is in src folder
+        Path(f"src/config/{file_name}"),
+        # finally just use the path passed in
+        original_path,
+    ):
+
+        if possible_path.exists():
+            break
+
+        print(f"Tried to read file from {possible_path} but it does not exist.")
+
     try:
-        return read_file(original_path)
+        # possible_path will be last item from the loop which is the actual path passed through
+        return read_file(possible_path)
     except Exception as e:
         raise e
