@@ -1,6 +1,7 @@
 from common_utils import __name__ as pkg_name
 import importlib.resources as resources
 from pathlib import Path
+import shutil
 import json
 import yaml
 import tomllib
@@ -81,14 +82,49 @@ def read_file(file_path, build_parent_dir=False, **kwargs):
 
 def _read_internal_resource(relative_file_path):
     """
-    Read local resources files in this module. Not be used outside
+    Read local resources files in this module. Not to be used outside
 
     Args:
         relative_file_path: relative file path (from root) of the resource file
+
+    Return:
+        File content
     """
     # read resources/file from files in the current module
     return read_file(resources.files(pkg_name) / relative_file_path)
 
 
+def remove_file(file_path):
+    """
+    Remove a file from location specified
+
+    Args:
+        file_path: string or pathlib.Path file path
+
+    Return:
+        None
+    """
+
+    Path(file_path).unlink(missing_ok=True)
+
+
+def remove_dir(dir_path):
+    """
+    Remove a folder from location specified (along with it's subdirs and contents)
+
+    Args:
+        dir_path: string or pathlib.Path directory path
+
+    Return:
+        None
+    """
+    dir_path = Path(dir_path)
+    if dir_path.is_dir():
+        shutil.rmtree(dir_path)
+        return
+    raise NotADirectoryError(f"{dir_path} is not a directory")
+
+
 if __name__ == "__main__":
-    read_file("test.py")
+    # read_file("test.py")
+    remove_dir("test")
