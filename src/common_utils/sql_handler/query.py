@@ -7,6 +7,10 @@ from common_utils.sql_handler._query_transformer import _transform_kv_to_clause
 
 
 class QueryParser:
+    """
+    Class decorator to pre-check sql queries/dictionary passed into the database connection objects
+    """
+
     def __init__(self, function):
         self.function = function
         self._expected_arguement = "query"
@@ -18,7 +22,6 @@ class QueryParser:
         )
 
     def __call__(self, *args, **kwargs):
-
         all_arguments_name = inspect.signature(self.function).parameters.keys()
 
         if self._expected_arguement not in all_arguments_name:

@@ -23,10 +23,16 @@ _ALLOWED_FILE_READER_EXTENSION = {
 def prepare_file_path(file_path):
     """
     If the directory (and it's subdirs) doesn't exist then it will get created.
-    Note that this doesn't direct create the file and actually the absolute file path
+    Note that this doesn't directly create the file and returns actually the absolute file path
 
-    Also it the saved data to live somewhere in C drive. This behaviour might
-    need to be changed in the future tho...
+    Also it expects the file_path to be part of C drive and throws error if it isn't.
+    This behaviour might need to be changed in the future tho...
+
+    Args:
+        file_path: string file path of the desired file path
+
+    Return:
+        Absolute Path object of the file_path
     """
     # get absolute path
     save_path = Path(file_path).resolve()
@@ -45,14 +51,41 @@ def prepare_file_path(file_path):
 
 
 def read_file(file_path, build_parent_dir=False, **kwargs):
+    """
+    Read file and build the parent directories if needed.
+    Note that there is a dictionary (_ALLOWED_FILE_READER_EXTENSION) of
+    allow file type that can be opened but if the file is not
+    of the allowed file type, will need to implement a function to do so.
+
+    Args:
+        file_path: string file path, can be relative or absolute
+        build_parent_dir: boolean, set to true to build parent dirs otherwise it's defaulted to False
+        **kwargs: Keyword arguments that can be passed in which will be used in the open() function when reading the file in
+
+    Return:
+        File content
+
+    """
     file_path = prepare_file_path(file_path) if build_parent_dir else Path(file_path)
 
     with open(file_path, **kwargs) as file_obj:
-        function = _ALLOWED_FILE_READER_EXTENSION.get(file_path.suffix)
+        try:
+            function = _ALLOWED_FILE_READER_EXTENSION.get(file_path.suffix)
+        except KeyError:
+            raise KeyError(
+                f"File with extension '{file_path.suffix}' is not supported."
+                f"The allowed extension are: {list(_ALLOWED_FILE_READER_EXTENSION.keys())}"
+            )
         return function(file_obj) if function is not None else file_obj.read()
 
 
 def _read_internal_resource(relative_file_path):
+    """
+    Read local resources files in this module. Not be used outside
+
+    Args:
+        relative_file_path: relative file path (from root) of the resource file
+    """
     # read resources/file from files in the current module
     return read_file(resources.files(pkg_name) / relative_file_path)
 

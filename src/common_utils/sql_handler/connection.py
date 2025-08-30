@@ -76,35 +76,87 @@ class DatabaseConnection(ABC):
         self.database_connection.close()
 
     @abstractmethod
-    def select_into_dataframe(self):
-        pass
-
-    @abstractmethod
-    def execute_statement(self):
-        pass
-
-    @abstractmethod
-    def insert_into_table(self):
+    def select_into_dataframe(query, self):
         """
-        Insert data from dataframe source table and SQLite target table, column names need to match
+        Select data from a table or view into a pandas dataframe
+        Note that query can be sql string or dictionary.
 
-        category = pd.DataFrame([
+        The dictionary need to be of the form below. Note that filters and columns
+        can be {} and [] respectively to indicate no filter were chosen and
+        all columns are selected. You can use this if the query is a simple
+        select query.
+
+        >>> {
+            'table':'table name',
+            'columns': ['list','of','column','names'],
+            'filters'{
+                'column':{
+                    'comparator':'value'
+                }
+            }
+        }
+
+        Args:
+            query: a sql query string or a dictionary with keys {'table','columns','filters'}.
+
+        Return:
+            pandas dataframe
+        """
+        pass
+
+    @abstractmethod
+    def execute_statement(self, query):
+        """
+        Execute a sql statement.
+
+        Args:
+            query: a sql query string
+
+        Return:
+            None
+        """
+        pass
+
+    @abstractmethod
+    def insert_into_table(self, dataframe, table_name, if_exixts="append"):
+        """
+        Insert data from dataframe source table and target table, column names need to match
+
+        >> category = pd.DataFrame([
                             [1,'b','f'],
                             [2,'a','o'],
                             [3,'r','z']
                         ])
-        category.columns = ['a','b','c']
+        >> category.columns = ['a','b','c']
 
-        insert_data_frame_to_sql(category,'Category')
+        >> insert_data_frame_to_sql(category,'Category')
+
+        Args:
+            dataframe: pandas dataframe to be insert
+            table_name: name of the table the dataframe is inserting into
+            if_exists: derive from pandas if_exists argument in pd.to_sql. Default is 'append'
+
         """
         pass
 
     @abstractmethod
     def get_all_objects(self):
+        """
+        Gets a table of all the sql objects
+
+        Return:
+            pandas dataframe of all the objects in the database along.
+        """
         pass
 
     @abstractmethod
     def get_table_details(self):
+        """
+        Gets a table of all the sql objects
+
+        Return:
+            pandas dataframe of all the objects in the database along.
+        """
         pass
 
 

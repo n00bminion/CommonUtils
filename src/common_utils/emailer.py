@@ -7,6 +7,20 @@ import os
 
 
 def _send_email(from_addr, to_addrs, password, msg, host="smtp.gmail.com", port=587):
+    """
+    Hidden function with basic email sending capability.
+
+    Args:
+        from_addr: email address to send email from,
+        to_addrs: list of email addresses to send email to,
+        password: password to log into email account,
+        msg: html message,
+        host: email host. Defaults to "smtp.gmail.com",
+        port: email port. Defaults to 587
+
+    Return:
+        None
+    """
     try:
         with smtplib.SMTP(
             host=host,
@@ -33,6 +47,16 @@ def build_html_email_meesage(
     style="",
     body="",
 ):
+    """
+    Premade HTML canvas that where we can fill in the style and body content with HTML string
+
+    Args:
+        style: style html
+        body: body html
+
+    Return:
+        None
+    """
     return (
         "<!DOCTYPE html>"
         "<html>"
@@ -63,6 +87,22 @@ def send(
     username: str = os.getenv("google_email_username"),
     password: str = os.getenv("google_email_password"),
 ):
+    """
+    Function to send email.
+
+    Args:
+        str_message: simple str content to put into email
+        html_message: simple html content to put into email
+        diy_message: html content to put into email (use build_html_email_meesage function to help build and format email)
+        subject: email subject
+        recipients: list of email recipients
+        attachment_paths: list = list of attachments file path that can be added attachment to email
+        username: email username
+        password: email password
+
+    Return:
+        None
+    """
 
     if not username:
         raise Exception(
