@@ -74,6 +74,8 @@ def get_config(config_file, check_possible_paths=True):
         ):
 
             possible_path = Path(possible_path_templates) / original_path.name
+            print(f"Trying to locate config file at: {possible_path}")
+
             if possible_path.exists():
                 print(f"Successfully found config file at: '{possible_path}'.")
                 break
