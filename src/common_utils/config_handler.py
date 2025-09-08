@@ -1,22 +1,20 @@
 from common_utils.io_handler.file import read_file
 from pathlib import Path
 import os
+from importlib.resources import files
 
 
-def _get_config_dir_in_src_pkg():
-    cwd_path = Path(os.getcwd())
+def _get_config_dir_in_src_pkg(module_name, config_folder_name):
+    # if no module is passed in then we skip
+    if not module_name:
+        return
 
-    src_dir = [f for f in cwd_path.iterdir() if ((f.is_dir()) and (f.name == "src"))]
-
-    assert (
-        len(src_dir) == 1
-    ), f"{len(src_dir)} src directories found in current module... there should only be one."
+    module_path = Path(files(module_name))
 
     config_dir = [
         dir
-        for pkg in src_dir[0].iterdir()
-        for dir in pkg.iterdir()
-        if dir.name == "config"
+        for dir in module_path.iterdir()
+        if (dir.is_dir() and (dir.name == f"{config_folder_name}"))
     ]
 
     # should be one or zero...
@@ -34,19 +32,30 @@ def _get_config_dir_in_src_pkg():
     return
 
 
-def get_config(config_file, check_possible_paths=True):
+def get_config(
+    config_file,
+    config_folder_name="config",
+    module_name=None,
+    check_possible_paths=True,
+):
     """
     Function to return content of config file by checking the possible paths the config file might be in.
 
-    The 3 places it scours are:
+    The first 2 places it scours are:
         - top level config, same level as src: ./config/
         - config folder 1 level down under src: ./src/config/
-        - config folder 2 levels down under src: ./src/pkg_name/config/
 
-    One caveat is when it looks for config file in ./src/pkg_name/config/, it looks at the current working directory and so if
-    the function isn't running at the top level, it might not work that well...
+    These two are mainly used for local code that are not supposed to be packaged up as when packaged up,
+    anything outside of the src folder is excluded. However if developing locally and the config folder is set
+    within the ./src/module_name/config/ folder, module_name is needed.
 
-    This can be turned off by setting check_possible_paths to False and it will use the path provided. It might also improve
+    The 3rd place it looks for is:
+        - config folder 2 levels down under src: ./src/module_name/config/
+
+    This is activated when the module_name argument is passed. You SHOULD use this when creating module
+    that are supposed to be imported from other bits of code.
+
+    If check_possible_paths is set to False and it will use the path provided. It might also improve
     the speed of the function in cases where you have a large number of folders where it won't need to search about and just
     defaults to the path provided.
 
@@ -54,16 +63,29 @@ def get_config(config_file, check_possible_paths=True):
 
     Args:
         config_file: str path of the config file
+        config_folder_name: str name of the config folder
+        module_name: str name of the module
         check_possible_paths: bool, check the possible paths the config file might be in
 
     Return:
         config file content.
+
+    Example:
+        >>> import module.__name__ as module_name
+        >>> get_config(
+                config_file = 'some_config_file_path.extension',
+                module_name = module_name
+                )
     """
 
     possible_config_paths = [
-        Path("config"),  # top level config, same level as src ./
-        Path("src/config"),  # one level below so ./src/
-        _get_config_dir_in_src_pkg(),  # this looks for config folder in ./src/pkg_name/
+        # these two are for local modules
+        Path(f"{config_folder_name}"),  # top level config, same level as src ./
+        Path(f"src/{config_folder_name}"),  # one level below so ./src/
+        # this is for import modules
+        _get_config_dir_in_src_pkg(
+            module_name, config_folder_name
+        ),  # this looks for config folder in ./src/pkg_name/
     ]
 
     original_path = Path(config_file)
@@ -74,7 +96,6 @@ def get_config(config_file, check_possible_paths=True):
         ):
 
             possible_path = Path(possible_path_templates) / original_path.name
-            print(f"Trying to locate config file at: {possible_path}")
 
             if possible_path.exists():
                 print(f"Successfully found config file at: '{possible_path}'.")
@@ -95,4 +116,4 @@ def get_config(config_file, check_possible_paths=True):
 
 
 if __name__ == "__main__":
-    get_config("test.json")
+    get_config("test.yaml")
