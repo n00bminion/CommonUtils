@@ -209,7 +209,7 @@ class PostgresConnection(DatabaseConnection, connection_engine="postgres"):
         except Exception as e:
             raise e
 
-    def insert_into_table(self, dataframe, table_name, if_exixts="append"):
+    def insert_into_table(self, dataframe, table_name, schema_name, if_exixts="append"):
 
         assert isinstance(dataframe, pd.DataFrame), "Use dataframe as data source"
 
@@ -218,6 +218,7 @@ class PostgresConnection(DatabaseConnection, connection_engine="postgres"):
             con=self.database_connection,
             index=False,
             if_exists=if_exixts,
+            schema=schema_name,
         )
 
     def get_all_objects(self):
