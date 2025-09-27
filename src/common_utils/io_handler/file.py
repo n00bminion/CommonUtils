@@ -6,18 +6,54 @@ import json
 import yaml
 import tomllib
 import PyPDF2
+import pandas as pd
 
+# this path is the default path for all cases
+ROOT_PATH = Path.home().resolve()
 
-_ALLOWED_FILE_READER_EXTENSION = {
-    # specific read func
-    ".yaml": yaml.safe_load,
-    ".json": json.load,
-    ".toml": tomllib.load,
-    ".pdf": PyPDF2.PdfFileReader,
-    # these just get opened with the standard .read()
-    ".csv": None,
-    ".txt": None,
-    ".sql": None,
+# anything that's not implemented is defaulted to .read()/.write()
+SUPPORTED_FILE_EXTENSION = {
+    # specific func
+    ".yaml": dict(
+        read=yaml.safe_load,
+        write=yaml.dump,
+    ),
+    ".json": dict(
+        read=json.load,
+        write=json.dump,
+    ),
+    ".toml": dict(
+        read=tomllib.load,
+        # hopefully we don't need to ever write toml...
+    ),
+    ".pdf": dict(
+        read=PyPDF2.PdfFileReader,
+    ),
+    # default everything
+    ".txt": dict(),
+    ".sql": dict(),
+    # tabular format so use pandas to read (might be better to use duckdb to read multiple files?)
+    # use pandas to write so these get treated differently
+    ".parquet": dict(
+        read=pd.read_parquet,
+        write="to_parquet",
+    ),
+    ".pkl": dict(
+        read=pd.read_pickle,
+        write="to_pickle",
+    ),
+    ".pickle": dict(
+        read=pd.read_pickle,
+        write="to_pickle",
+    ),
+    ".csv": dict(
+        read=pd.read_csv,
+        write="to_csv",
+    ),
+    ".xlsx": dict(
+        read=pd.read_excel,
+        write="to_excel",
+    ),
 }
 
 
@@ -39,11 +75,9 @@ def prepare_file_path(file_path):
     save_path = Path(file_path).resolve()
     parent_dir = save_path.parent
 
-    # expects file to be "C:\Users\name"
-    root_path = Path.home().resolve()
-
-    if not parent_dir.is_relative_to(root_path):
-        raise ValueError(f"{save_path} path should start with {root_path}")
+    # expects file path to start with "C:\Users\name"
+    if not parent_dir.is_relative_to(ROOT_PATH):
+        raise ValueError(f"{save_path} path should start with {ROOT_PATH}")
 
     # create the dir and any subdirs that doesn't exist
     parent_dir.mkdir(parents=True, exist_ok=True)
@@ -51,33 +85,38 @@ def prepare_file_path(file_path):
     return save_path
 
 
-def read_file(file_path, build_parent_dir=False, **kwargs):
+def read_file(
+    file_path, build_parent_dir=False, open_mode="r", file_encoding=None, **kwargs
+):
     """
     Read file and build the parent directories if needed.
-    Note that there is a dictionary (_ALLOWED_FILE_READER_EXTENSION) of
-    allow file type that can be opened but if the file is not
-    of the allowed file type, will need to implement a function to do so.
 
     Args:
         file_path: string file path, can be relative or absolute
         build_parent_dir: boolean, set to true to build parent dirs otherwise it's defaulted to False
-        **kwargs: Keyword arguments that can be passed in which will be used in the open() function when reading the file in
+        open_mode: string mode to open file to write to, it's defaulted to "w"
+        file_encoding: string encoding to open file to write to, it's defaulted to None
+        **kwargs: Keyword arguments that can be passed in which will be used in the function reading the file
 
-    Return:
+    Returns:
         File content
 
     """
     file_path = prepare_file_path(file_path) if build_parent_dir else Path(file_path)
 
-    with open(file_path, **kwargs) as file_obj:
+    allowed_file_reader_extension = {
+        k: v.get("read") for k, v in SUPPORTED_FILE_EXTENSION.items()
+    }
+
+    with open(file_path, mode=open_mode, encoding=file_encoding) as file_obj:
         try:
-            function = _ALLOWED_FILE_READER_EXTENSION.get(file_path.suffix)
+            function = allowed_file_reader_extension.get(file_path.suffix)
         except KeyError:
             raise KeyError(
                 f"File with extension '{file_path.suffix}' is not supported."
-                f"The allowed extension are: {list(_ALLOWED_FILE_READER_EXTENSION.keys())}"
+                f"The allowed extension are: {list(allowed_file_reader_extension.keys())}"
             )
-        return function(file_obj) if function is not None else file_obj.read()
+        return function(file_obj, **kwargs) if function is not None else file_obj.read()
 
 
 def _read_internal_resource(relative_file_path):
@@ -106,6 +145,7 @@ def remove_file(file_path):
     """
 
     Path(file_path).unlink(missing_ok=True)
+    print(f"{file_path} is removed")
 
 
 def remove_dir(dir_path):
@@ -125,6 +165,86 @@ def remove_dir(dir_path):
     raise NotADirectoryError(f"{dir_path} is not a directory")
 
 
+def save_to_file(
+    content,
+    file_path,
+    build_parent_dir=True,
+    open_mode="w",
+    file_encoding=None,
+    **kwargs,
+):
+    """
+    Function to save some data/content to a file location (and build the parent directories if needed)
+
+    Args:
+        content: file content to be saved. This can be pretty much anything
+        file_path: string file path, can be relative or absolute
+        build_parent_dir: boolean, set to true to build parent dirs otherwise it's defaulted to False
+        open_mode: string mode to open file to write to, it's defaulted to "w"
+        file_encoding: string encoding to open file to write to, it's defaulted to None
+        **kwargs: Keyword arguments that can be passed in which will be used in the function writing the file
+
+    Return:
+        None
+
+    """
+
+    # prep the file path to make sure the desire folder is there
+    # this will raise error if it's not under root path
+    file_path = prepare_file_path(file_path) if build_parent_dir else Path(file_path)
+    allowed_file_writer_extension = {
+        k: v.get("write") for k, v in SUPPORTED_FILE_EXTENSION.items()
+    }
+
+    if isinstance(content, pd.DataFrame):
+        cls_method = allowed_file_writer_extension.get(file_path.suffix)
+        getattr(content, cls_method)(file_path, **kwargs)
+
+    else:
+        try:
+            with open(
+                file=file_path, mode=open_mode, encoding=file_encoding
+            ) as file_obj:
+
+                try:
+                    function = allowed_file_writer_extension.get(file_path.suffix)
+                except KeyError:
+                    raise KeyError(
+                        f"File with extension '{file_path.suffix}' is not supported."
+                        f"The allowed extension are: {list(allowed_file_writer_extension.keys())}"
+                    )
+
+                # account for when function derived from allowed_file_writer_extension
+                # is a class method name from pandas and not actually a function
+                try:
+                    if not callable(function):
+                        raise
+                except Exception:
+                    raise TypeError(
+                        f"The content passed in needs to be a pandas DataFrame and not {type(content)}. "
+                        "Convert to a dataframe first before saving the data"
+                    )
+
+                return (
+                    function(content, file_obj, **kwargs)
+                    if function is not None
+                    else file_obj.write(content)
+                )
+
+        # always wanna delete file if fail
+        except Exception:
+            print(f"Unable to write to {file_path}. Removing created file place holder")
+            remove_file(file_path=file_path)
+            raise
+
+
 if __name__ == "__main__":
     # read_file("test.py")
-    remove_dir("test")
+    # remove_dir("test")
+    save_to_file(
+        pd.DataFrame({"a": [1, 2, 3]}),
+        "abc.parquet",
+        engine="pyarrow",
+    )
+
+    save_to_file("asdfadsfad", "xyz.adsf")  # this will fail
