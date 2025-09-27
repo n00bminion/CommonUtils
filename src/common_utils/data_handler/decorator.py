@@ -4,7 +4,7 @@ import socket
 
 def add_created_audit_columns(*outer_args, add_created_date=True, add_created_by=True):
     """
-    Decorator to add _CreatedDate and _CreatedBy column to dataframe automatically.
+    Decorator to add _created_date and _created_by column to dataframe automatically.
     Can set add_created_date and/or add_created_by to False to not add the columns
 
     Args:
@@ -22,10 +22,10 @@ def add_created_audit_columns(*outer_args, add_created_date=True, add_created_by
         )
 
     def _add_created_date(data):
-        return data.assign(_CreatedDate=pd.Timestamp.now())
+        return data.assign(_created_date=pd.Timestamp.now())
 
     def _add_created_by(data):
-        return data.assign(_CreatedBy=socket.gethostname())
+        return data.assign(_created_by=socket.gethostname())
 
     # default everything (no params passed)
     if len(outer_args) == 1:
