@@ -6,7 +6,7 @@ def _convert_camel(camel_text, replacement):
     possible_duped_pattern = re.sub(
         camel_search_pattern, replacement, camel_text
     ).lower()
-    return possible_duped_pattern.sub(rf"\{replacement}+", f"{replacement}", camel_text)
+    return re.sub(rf"\{replacement}+", f"{replacement}", possible_duped_pattern)
 
 
 def convert_camel_to_snake_case(text):
@@ -31,4 +31,5 @@ def convert_pascal_to_snake_case(text):
 
 
 if __name__ == "__main__":
-    convert_camel_to_snake_case("someTextToTestHere")
+    print(convert_camel_to_snake_case("someTextToTestHere"))
+    print(convert_camel_to_snake_case("_someTextToTestHere"))
