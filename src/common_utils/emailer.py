@@ -73,7 +73,7 @@ def build_html_email_meesage(
         '<body bgcolor="#F5F8FA" style="width: 100%; font-family:Lato, sans-serif; font-size:18px; margin:0">'
         f"{body}"
         "</body>"
-        "</html>",
+        "</html>"
     )
 
 
