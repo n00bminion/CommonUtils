@@ -8,7 +8,7 @@ import sqlalchemy
 
 # local module
 from common_utils.io_handler import file
-from common_utils.sql_handler.query import QueryParser
+from common_utils.database.query import QueryParser
 
 
 class DatabaseConnection(ABC):

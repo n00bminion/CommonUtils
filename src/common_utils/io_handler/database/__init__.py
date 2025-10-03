@@ -1,4 +1,4 @@
-from common_utils.sql_handler.connection import DatabaseConnection
+from common_utils.database.connection import DatabaseConnection
 
 if __name__ == "__main__":
     with DatabaseConnection(
