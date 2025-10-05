@@ -292,3 +292,21 @@ class SqliteConnection(DatabaseConnection, connection_engine="sqlite"):
         return self.select_into_dataframe(
             sql,
         )
+
+
+if __name__ == "__main__":
+    with DatabaseConnection(
+        database_file_path="test.db",
+        connection_engine="sqlite",
+    ) as conn:
+        conn.execute_statement("create table test_table (id int)")
+
+        df = conn.select_into_dataframe(
+            {
+                "table": "test_table",
+                "columns": [],
+                "filters": {"id": ["1"]},
+            }
+        )
+
+        df
