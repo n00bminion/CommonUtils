@@ -1,6 +1,5 @@
 from common_utils.io_handler.file import read_file
 from pathlib import Path
-import os
 from importlib.resources import files
 
 
@@ -23,7 +22,9 @@ def _get_config_dir_in_src_pkg(module_name, config_folder_name):
     assert no_of_config_dirs in [
         0,
         1,
-    ], f"{no_of_config_dirs} config directories found in current module... Unable to resolve which config folder to use. Try and collapse multiple config folders into one."
+    ], (
+        f"{no_of_config_dirs} config directories found in current module... Unable to resolve which config folder to use. Try and collapse multiple config folders into one."
+    )
 
     if no_of_config_dirs:
         return config_dir[0]
@@ -94,7 +95,6 @@ def get_config(
         for possible_path_templates in filter(
             lambda folder_template: bool(folder_template), possible_config_paths
         ):
-
             possible_path = Path(possible_path_templates) / original_path.name
 
             if possible_path.exists():

@@ -54,7 +54,6 @@ class QueryParser:
 
     @parse.register
     def _parse_string(self, query: str):
-
         return sqlparse.format(
             re.sub(
                 # remove double whitespace in between
@@ -76,27 +75,27 @@ class QueryParser:
         allowed_key = [table, columns, filters]
 
         # check if all the keys are there, even if "select * ", still expects filter to be an empty dict
-        assert sorted(list(query)) == (
-            sorted(allowed_key)
-        ), f"Only a dictionary with {len(allowed_key)} keys is allowed. The keys are {allowed_key}. The passed in keys are {list(query)}"
+        assert sorted(list(query)) == (sorted(allowed_key)), (
+            f"Only a dictionary with {len(allowed_key)} keys is allowed. The keys are {allowed_key}. The passed in keys are {list(query)}"
+        )
 
         # table name is only allowed to be a string
         table_name = query[table]
-        assert (
-            type(table_name) == str
-        ), f"The value for {table} is {table_name}. This is expected to be a str but instead got {type(table_name)}"
+        assert type(table_name) == str, (
+            f"The value for {table} is {table_name}. This is expected to be a str but instead got {type(table_name)}"
+        )
 
         # need to pass in list or tuple of columns
         columns_iter = query[columns]
-        assert (type(columns_iter) == list) or (
-            type(columns_iter) == tuple
-        ), f"The value for {columns} is {columns_iter}. This is expected to be a list or tuple but instead got {type(columns_iter)}. If choosing all columns, use an empty list or tuple"
+        assert (type(columns_iter) == list) or (type(columns_iter) == tuple), (
+            f"The value for {columns} is {columns_iter}. This is expected to be a list or tuple but instead got {type(columns_iter)}. If choosing all columns, use an empty list or tuple"
+        )
 
         # expect dictionary for filter
         filter_dict = query[filters]
-        assert (
-            type(filter_dict) == dict
-        ), f"The value for {filters} is {filter_dict}. This is expected to be a dict but instead got {type(filter_dict)}. If there's no filtering, use an empty dict"
+        assert type(filter_dict) == dict, (
+            f"The value for {filters} is {filter_dict}. This is expected to be a dict but instead got {type(filter_dict)}. If there's no filtering, use an empty dict"
+        )
 
         # from this point on, we can construct query
         select_columns_from_table = f"SELECT {', '.join(columns_iter) if columns_iter else '*'} FROM  {table_name}"
@@ -112,9 +111,9 @@ class QueryParser:
         non_str_columns = [
             column for column in filter_dict.keys() if type(column) != str
         ]
-        assert (
-            len(non_str_columns) == 0
-        ), f"Keys in {filter} represent column names and should be of type str"
+        assert len(non_str_columns) == 0, (
+            f"Keys in {filter} represent column names and should be of type str"
+        )
 
         # transform the filter into actual list of sql clauses
 

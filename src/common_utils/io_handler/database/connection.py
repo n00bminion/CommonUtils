@@ -59,7 +59,7 @@ class DatabaseConnection(ABC):
             obj = cls._registry[connection_engine]
             obj.connection_engine = connection_engine
             return super().__new__(obj)
-        except KeyError as e:
+        except KeyError:
             raise ValueError(
                 f"{connection_engine} is not in list of allowed connection_engines. Allowed values are: {', '.join(cls._registry.keys())}"
             )
@@ -161,7 +161,6 @@ class DatabaseConnection(ABC):
 
 
 class PostgresConnection(DatabaseConnection, connection_engine="postgres"):
-
     def __init__(
         self,
         database_name="postgres",
@@ -210,7 +209,6 @@ class PostgresConnection(DatabaseConnection, connection_engine="postgres"):
             raise e
 
     def insert_into_table(self, dataframe, table_name, if_exixts="append", **kwargs):
-
         assert isinstance(dataframe, pd.DataFrame), "Use dataframe as data source"
 
         dataframe.to_sql(
@@ -242,7 +240,6 @@ class PostgresConnection(DatabaseConnection, connection_engine="postgres"):
 
 
 class SqliteConnection(DatabaseConnection, connection_engine="sqlite"):
-
     def __init__(
         self,
         database_file_path="database.db",
@@ -287,7 +284,6 @@ class SqliteConnection(DatabaseConnection, connection_engine="sqlite"):
         return self.select_into_dataframe(sql)
 
     def get_table_details(self, table_name):
-
         sql = file._read_internal_resource(
             f"{self._resource_path}/{self.connection_engine}/get_object_details.sql"
         ).format(

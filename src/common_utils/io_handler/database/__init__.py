@@ -5,7 +5,6 @@ if __name__ == "__main__":
         database_file_path="test.db",
         connection_engine="sqlite",
     ) as conn:
-
         conn.execute_statement("create table test_table (id int)")
 
         df = conn.select_into_dataframe(

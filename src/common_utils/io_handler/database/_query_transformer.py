@@ -1,5 +1,6 @@
 from functools import singledispatch
 
+
 # dodgy black formatting so turning formatting off here
 # fmt: off
 @singledispatch

@@ -205,7 +205,6 @@ def save_to_file(
             with open(
                 file=file_path, mode=open_mode, encoding=file_encoding
             ) as file_obj:
-
                 try:
                     function = allowed_file_writer_extension.get(file_path.suffix)
                 except KeyError:
