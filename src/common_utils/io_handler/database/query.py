@@ -3,7 +3,7 @@ import inspect
 import re
 import sqlparse
 
-from common_utils.database._query_transformer import _transform_kv_to_clause
+from common_utils.io_handler.database._query_transformer import _transform_kv_to_clause
 
 
 class QueryParser:
