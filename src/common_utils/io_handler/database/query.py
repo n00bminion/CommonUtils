@@ -81,19 +81,19 @@ class QueryParser:
 
         # table name is only allowed to be a string
         table_name = query[table]
-        assert type(table_name) == str, (
+        assert isinstance(table_name, str), (
             f"The value for {table} is {table_name}. This is expected to be a str but instead got {type(table_name)}"
         )
 
         # need to pass in list or tuple of columns
         columns_iter = query[columns]
-        assert (type(columns_iter) == list) or (type(columns_iter) == tuple), (
+        assert isinstance(columns_iter, (list, tuple)), (
             f"The value for {columns} is {columns_iter}. This is expected to be a list or tuple but instead got {type(columns_iter)}. If choosing all columns, use an empty list or tuple"
         )
 
         # expect dictionary for filter
         filter_dict = query[filters]
-        assert type(filter_dict) == dict, (
+        assert isinstance(filter_dict, dict), (
             f"The value for {filters} is {filter_dict}. This is expected to be a dict but instead got {type(filter_dict)}. If there's no filtering, use an empty dict"
         )
 
@@ -109,7 +109,7 @@ class QueryParser:
 
         # all the keys in this nested filter dict represent columns and need to be str also
         non_str_columns = [
-            column for column in filter_dict.keys() if type(column) != str
+            column for column in filter_dict.keys() if not isinstance(column, str)
         ]
         assert len(non_str_columns) == 0, (
             f"Keys in {filter} represent column names and should be of type str"
@@ -123,9 +123,9 @@ class QueryParser:
         ]
 
         for index, clause in enumerate(sql_clause_list):
-            if type(clause) == str:
+            if isinstance(clause, str):
                 sql_clause_list[index] = f" AND {clause}"
-            elif type(clause) == list:
+            elif isinstance(clause, list):
                 sql_clause_list[index] = " AND ".join(clause)
 
         final_query = select_columns_from_table + " WHERE " + " ".join(sql_clause_list)

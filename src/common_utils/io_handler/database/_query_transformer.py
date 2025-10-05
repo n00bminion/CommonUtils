@@ -26,7 +26,7 @@ def _iter(filter, column):
         (
             element
             # if int then we just leave it as is
-            if type(element) == int
+            if isinstance(element, int)
             # otherwise we wrap quotes around it to signify it's str
             else f"'{element}'"
         )
@@ -39,7 +39,7 @@ def _dict(filter, column):
     sql_comparator = {">", ">=", "<", "<=", "=", "!=", "<>"}
 
     non_str_comparator = [
-        comparator for comparator in filter.keys() if type(column) != str
+        comparator for comparator in filter.keys() if not isinstance(column, str)
     ]
     assert (
         len(non_str_comparator) == 0
