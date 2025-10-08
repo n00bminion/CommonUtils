@@ -202,11 +202,14 @@ class PostgresConnection(DatabaseConnection, connection_engine="postgres"):
 
     @QueryParser
     def execute_statement(self, query):
+        query = text(f"{query}; COMMIT;")
         try:
             with self.database_connection.begin():
                 # not able to execute script like sqlite :(
                 self.database_connection.execute(
-                    text(query).execution_options(autocommit=True)
+                    query.execution_options(
+                        autocommit=True
+                    )  # auto commit doesn't do anything here???
                 )
         except Exception as e:
             raise e
