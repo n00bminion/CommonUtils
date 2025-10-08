@@ -205,7 +205,9 @@ class PostgresConnection(DatabaseConnection, connection_engine="postgres"):
         try:
             with self.database_connection.begin():
                 # not able to execute script like sqlite :(
-                self.database_connection.execute(text(query))
+                self.database_connection.execute(
+                    text(query).execution_options(autocommit=True)
+                )
         except Exception as e:
             raise e
 
