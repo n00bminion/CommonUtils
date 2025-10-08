@@ -5,6 +5,7 @@ from pathlib import Path
 # db module
 import sqlite3
 import sqlalchemy
+from sqlalchemy import text
 
 # local module
 from common_utils.io_handler import file
@@ -204,7 +205,7 @@ class PostgresConnection(DatabaseConnection, connection_engine="postgres"):
         try:
             with self.database_connection.begin():
                 # not able to execute script like sqlite :(
-                self.database_connection.execute(query)
+                self.database_connection.execute(text(query))
         except Exception as e:
             raise e
 
