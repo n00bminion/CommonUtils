@@ -202,7 +202,7 @@ class PostgresConnection(DatabaseConnection, connection_engine="postgres"):
 
     @QueryParser
     def execute_statement(self, query):
-        query = text(f"{query}; COMMIT;")
+        query = text(f"{query.strip()}; COMMIT;")
         try:
             with self.database_connection.begin():
                 # not able to execute script like sqlite :(
