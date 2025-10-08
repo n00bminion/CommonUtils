@@ -208,14 +208,14 @@ class PostgresConnection(DatabaseConnection, connection_engine="postgres"):
         except Exception as e:
             raise e
 
-    def insert_into_table(self, dataframe, table_name, if_exixts="append", **kwargs):
+    def insert_into_table(self, dataframe, table_name, if_exists="append", **kwargs):
         assert isinstance(dataframe, pd.DataFrame), "Use dataframe as data source"
 
         dataframe.to_sql(
             name=table_name,
             con=self.database_connection,
             index=False,
-            if_exists=if_exixts,
+            if_exists=if_exists,
             **kwargs,
         )
 
