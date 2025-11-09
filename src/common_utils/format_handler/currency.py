@@ -4,8 +4,10 @@ import pandas as pd
 from common_utils.io_handler.external import get_request
 from common_utils.data_handler.array import chunk_iter
 from common_utils.format_handler.typography import convert_camel_to_snake_case
+from common_utils.cache_handler.file_cache import cache_to_file
 
 
+@cache_to_file(days_to_keep=30)
 def _get_global_currency_mapping():
     number_of_column = 6
     raw_mapping = get_request(r"https://www.xe.com/symbols/")
@@ -36,11 +38,11 @@ def _get_global_currency_mapping():
     return fx_mapping
 
 
-GLOBAL_CURRENCY_MAPPING = _get_global_currency_mapping()
+_GLOBAL_CURRENCY_MAPPING = _get_global_currency_mapping()
 
 
 def derive_currency_code(value, currency_code_type="font_code2000"):
-    currency_code_types = GLOBAL_CURRENCY_MAPPING.columns.tolist()
+    currency_code_types = _GLOBAL_CURRENCY_MAPPING.columns.tolist()
     if currency_code_type not in currency_code_types:
         raise ValueError(
             f"currency_code_type must be one of {[code for code in currency_code_types if code != 'currency_code']}, got {currency_code_type}"
@@ -50,8 +52,8 @@ def derive_currency_code(value, currency_code_type="font_code2000"):
     if value.startswith("&#"):
         value = html.unescape(value)
 
-    cur_code = GLOBAL_CURRENCY_MAPPING[
-        GLOBAL_CURRENCY_MAPPING[currency_code_type] == value
+    cur_code = _GLOBAL_CURRENCY_MAPPING[
+        _GLOBAL_CURRENCY_MAPPING[currency_code_type] == value
     ].currency_code.values[0]
 
     if not cur_code:
@@ -61,4 +63,4 @@ def derive_currency_code(value, currency_code_type="font_code2000"):
 
 
 if __name__ == "__main__":
-    _get_global_currency_mapping()
+    data = _get_global_currency_mapping()
