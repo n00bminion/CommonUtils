@@ -44,7 +44,8 @@ class QueryParser:
 
         return result
 
-    # https://stackoverflow.com/questions/30104047/how-can-i-decorate-an-instance-method-with-a-decorator-class
+    #  method to allow class to be a decorator
+    #  https://stackoverflow.com/questions/30104047/how-can-i-decorate-an-instance-method-with-a-decorator-class
     def __get__(self, instance, owner):
         return partial(self.__call__, instance)
 
