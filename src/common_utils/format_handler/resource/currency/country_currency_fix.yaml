@@ -1,0 +1,13 @@
+# fix the below country and currency mapping name derivation
+Bosnia and Herzegovina Convertible Mark: 
+  country: Bosnia and Herzegovina
+  currency: Convertible Mark
+China Yuan Renminbi:
+  country: China
+  currency: Yuan Renminbi
+Euro Member Countries:
+  country: European Countries
+  currency: Euro
+Taiwan New Dollar:
+  country: Taiwan
+  currency: New Dollar
