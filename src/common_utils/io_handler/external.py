@@ -1,6 +1,14 @@
 import requests
 
 
+def _try_raise_for_status(response):
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        raise e
+    return response
+
+
 def get_request(*args, **kwargs):
     """
     Wrapper around requests.get function that
@@ -15,12 +23,7 @@ def get_request(*args, **kwargs):
 
     """
     response = requests.get(*args, **kwargs)
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        raise e
-
-    return response
+    return _try_raise_for_status(response=response)
 
 
 def post_request(*args, **kwargs):
@@ -37,9 +40,4 @@ def post_request(*args, **kwargs):
 
     """
     response = requests.post(*args, **kwargs)
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        raise e
-
-    return response
+    return _try_raise_for_status(response=response)

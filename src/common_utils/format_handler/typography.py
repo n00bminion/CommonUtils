@@ -2,16 +2,16 @@ import re
 
 
 # STR_NUM_SCALE_TO_NUM = {"billion": 1e9, "million": 1e6, "thousand": 1e3}
-# CURR_SIGN_TO_CURR_NAME = {"£": "GBP"}
+_STR_TO_BOOL_MAPPING = {
+    "false": False,
+    "f": False,
+    "true": True,
+    "t": True,
+}
 
 
 def convert_string_to_bool(value):
-    bool_value = {
-        "false": False,
-        "f": False,
-        "true": True,
-        "t": True,
-    }.get(value.lower(), None)
+    bool_value = _STR_TO_BOOL_MAPPING.get(value.lower(), None)
 
     if bool_value is None:
         raise ValueError(
