@@ -1,23 +1,43 @@
 import re
 
 
-# STR_NUM_SCALE_TO_NUM = {"billion": 1e9, "million": 1e6, "thousand": 1e3}
 _STR_TO_BOOL_MAPPING = {
-    "false": False,
-    "f": False,
-    "true": True,
-    "t": True,
+    **{value: False for value in ("false", "f")},
+    **{value: False for value in ("true", "t")},
+}
+
+_STR_NUM_SCALE_TO_NUM = {
+    **{value: 1e12 for value in ("trillion", "t", "tn")},
+    **{value: 1e9 for value in ("billion", "b", "bn")},
+    **{
+        value: 1e6 for value in ("million", "m", "mn", "mill", "mln", "g")
+    },  # g is a bit dodgy?
+    **{
+        value: 1e3
+        for value in (
+            "thousand",
+            "k",
+        )
+    },
 }
 
 
-def convert_string_to_bool(value):
-    bool_value = _STR_TO_BOOL_MAPPING.get(value.lower(), None)
-
-    if bool_value is None:
+def _get_from_global_dict(value, global_dict):
+    try:
+        derived_value = global_dict[value.lower()]
+    except KeyError:
         raise ValueError(
-            f"Cannot convert {value} to boolean, acceptable values are {list(bool_value.keys())}"
+            f"Cannot convert {value} to boolean, acceptable values are {list(global_dict.keys())}"
         )
-    return bool_value
+    return derived_value
+
+
+def convert_large_number_str_to_numeric_scaler(value):
+    return _get_from_global_dict(value=value, global_dict=_STR_NUM_SCALE_TO_NUM)
+
+
+def convert_string_to_bool(value):
+    return _get_from_global_dict(value=value, global_dict=_STR_TO_BOOL_MAPPING)
 
 
 def _convert_camel(camel_text, replacement):
