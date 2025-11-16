@@ -61,6 +61,8 @@ def _get_global_currency_mapping():
             # primary currency to be flagged in the data
             _read_internal_resource(rf"{relative_root_path}\primary_currencies.yaml")
         ),
+        unicode_decimal=fx_mapping.unicode_decimal.astype(str) + ";",
+        unicode_hex="x" + fx_mapping.unicode_hex.astype(str) + ";",
     ).drop(
         columns=["country_current", "currency_current", "country_fix", "currency_fix"]
     )
@@ -134,11 +136,11 @@ def derive_currency_code(value: str, is_primary_currency=True, country=None):
 
 
 if __name__ == "__main__":
-    derive_currency_code("Z$", is_primary_currency=False)
-    derive_currency_code(
-        "$", country="United States"
-    )  # only US in the list so will pass without country param but if is_primary_currency = False, this would fail
-    derive_currency_code(
-        "£"
-    )  # pass since only GBP for £ but will fail if is_primary_currency = False
+    # derive_currency_code("Z$", is_primary_currency=False)
+    # derive_currency_code(
+    #     "$", country="United States"
+    # )  # only US in the list so will pass without country param but if is_primary_currency = False, this would fail
+    # derive_currency_code(
+    #     "£"
+    # )  # pass since only GBP for £ but will fail if is_primary_currency = False
     derive_currency_code("&#8364")  # pass
