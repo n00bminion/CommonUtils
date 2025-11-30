@@ -143,4 +143,4 @@ if __name__ == "__main__":
     # derive_currency_code(
     #     "£"
     # )  # pass since only GBP for £ but will fail if is_primary_currency = False
-    derive_currency_code("&#8364")  # pass
+    print(derive_currency_code("&#8364;"))  # pass
