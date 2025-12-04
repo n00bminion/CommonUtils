@@ -36,7 +36,7 @@ jobs:
       # if pre-commit was not installed, this will probably fail
       - name: Run pre commit on all files
         run: |
-          pre-commit run --all-files --show-diff-on-failurep
+          pre-commit run --all-files --show-diff-on-failure
       
       # run tests
       - name: Run Pytest
