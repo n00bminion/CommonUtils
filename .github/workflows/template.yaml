@@ -21,9 +21,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       
-      # pat token secret (PAT_TOKEN) required to be created first but this won't fail if not present
-      - name: Update Github URL
-        run: git config --global url.https://${{ secrets.PAT_TOKEN }}@github.com/.insteadOf https://github.com/
+      # # pat token secret (PAT_TOKEN) required to be created first but this won't fail if not present
+      # - name: Update Github URL
+      #   run: git config --global url.https://${{ secrets.PAT_TOKEN }}@github.com/.insteadOf https://github.com/
 
       - name: Installing current package and dependencies
         run: |
