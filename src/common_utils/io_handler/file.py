@@ -5,7 +5,7 @@ import shutil
 import json
 import yaml
 import tomllib
-import PyPDF2
+import pypdf
 import pandas as pd
 
 # this path is the default path for all cases
@@ -27,7 +27,7 @@ SUPPORTED_FILE_EXTENSION = {
         # hopefully we don't need to ever write toml...
     ),
     ".pdf": dict(
-        read=PyPDF2.PdfFileReader,
+        read=pypdf.PdfReader,
     ),
     # default everything
     ".txt": dict(),
@@ -216,7 +216,7 @@ def save_to_file(
                 # account for when function derived from allowed_file_writer_extension
                 # is a class method name from pandas and not actually a function
                 try:
-                    if not callable(function):
+                    if (not callable(function)) and (isinstance(function, str)):
                         raise
                 except Exception:
                     raise TypeError(

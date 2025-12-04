@@ -1,0 +1,44 @@
+name: Common Utils Workflow
+
+on: 
+  push:
+    
+jobs:
+  run-pre-commit:
+    name: Install and run pre-commit and run Pytest
+    runs-on: windows-latest
+    
+    strategy:
+      matrix:
+        python-version: ["3.12.3", "3.12.4", "3.12.5", "3.12.6", "3.12.7", "3.12.8", "3.12.9"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      # pat token secret (PAT_TOKEN) required to be created first but this won't fail if not present
+      - name: Update Github URL
+        run: git config --global url.https://${{ secrets.PAT_TOKEN }}@github.com/.insteadOf https://github.com/
+
+      - name: Installing current package and dependencies
+        run: |
+          pip install -e .
+
+      - name: Get current package version
+        run: |
+          python -m setuptools_scm
+      
+      # if pre-commit was not installed, this will probably fail
+      - name: Run pre commit on all files
+        run: |
+          pre-commit run --all-files --show-diff-on-failurep
+      
+      # run tests
+      - name: Run Pytest
+        run: |
+          pytest
