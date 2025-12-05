@@ -1,23 +1,55 @@
 import logging
+from logging import (
+    Formatter,
+    StreamHandler,
+    FileHandler,
+    Handler,
+    getLogger,
+)
+import sys
+from common_utils.io_handler.file import prepare_file_path
 
 _LOGGING_FMT = "%(asctime)s - %(levelname)s - %(filename)s @ %(lineno)d [ %(funcName)s ] - %(message)s"
 _DEFAULT_LOGGER_NAME = "LOGGER"
 
 
-class _CustomFormatter(logging.Formatter):
+class DashOutputHandler(StreamHandler):
     """
-    Custom class for the logging formatting. Not for direct use.
+    Logger class to capture logs for Dash applications. Link for this and usage:
+    https://www.pueschel.dev/python,/dash,/plotly/2019/06/28/dash-logs.html
     """
 
+    def __init__(self, stream=None):
+        super().__init__(stream=stream)
+        self.logs = list()
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            self.logs.append(msg)
+            self.logs = self.logs[-1000:]
+            self.flush()
+        except Exception:
+            self.handleError(record)
+
+
+class CustomFormatter(Formatter):
+    """
+    Custom class for the logging formatting based on the level of the log message.
+    """
+
+    # ANSI Color Codes - https://talyian.github.io/ansicolors/
     green = "\x1b[32m;20m"
     grey = "\x1b[38;20m"
     yellow = "\x1b[33;20m"
     red = "\x1b[31;20m"
     bold_red = "\x1b[31;1m"
+
     reset = "\x1b[0m"
     format = _LOGGING_FMT
 
     FORMATS = {
+        logging.NOTSET: grey + format + reset,
         logging.DEBUG: green + format + reset,
         logging.INFO: grey + format + reset,
         logging.WARNING: yellow + format + reset,
@@ -27,20 +59,53 @@ class _CustomFormatter(logging.Formatter):
 
     def format(self, record):
         log_fmt = self.FORMATS.get(record.levelno)
-        formatter = logging.Formatter(log_fmt)
+        formatter = Formatter(log_fmt)
         return formatter.format(record)
+
+
+def create_stream_logging_handler():
+    """
+    Create stream logging handler with custom formatter.
+    Returns:
+        StreamHandler object
+    """
+    hdlr = StreamHandler()
+    hdlr.setFormatter(CustomFormatter())
+    return hdlr
+
+
+def create_file_logging_handler(log_file_path="logging.log"):
+    """
+    Create file logging handler with standard formatter.
+    Args:
+        log_file_path: path to the log file. Default is 'logging.log'
+    Returns:
+        FileHandler object
+    """
+    prepare_file_path(log_file_path)
+    hdlr = FileHandler(log_file_path, mode="w")
+    hdlr.setFormatter(Formatter(_LOGGING_FMT))
+    return hdlr
+
+
+def create_dash_stream_output_logging_handler():
+    """
+    Create Dash stream logging handler with standard formatter.
+    Returns:
+        DashOutputHandler object
+    """
+    hdlr = DashOutputHandler(stream=sys.stdout)
+    hdlr.setFormatter(Formatter(_LOGGING_FMT))
+    return hdlr
 
 
 def create_logger(
     logger_name=_DEFAULT_LOGGER_NAME,
     logging_level=logging.DEBUG,
-    handler_logging_level=None,
-    log_file_path="logging.log",
+    handlers=None,
 ):
     """
-    Create logger object that can be passed around.
-    It has 2 handlers, stream and file which will output the logs
-    in the file passed via log_file_path argument as well as stdout.
+    Create logger object that can be passed around with 2 handlers by default: stream and file handlers.
 
     All the arguments have default and you can just run it like this:
 
@@ -51,51 +116,29 @@ def create_logger(
     >>> import logging
     >>> logger = create_logger(logging_level=logging.INFO)
 
-    If you want to just wanna output the error to file but show all the log
-    on stdout, you can use the handler_logging_level arguement. Note that
-    this will only work if you leave the logging_level as logging.DEBUG.
-
-    >>> logger = create_logger(
-            handler_logging_level = {
-                'file':logging.ERROR,
-                'stream':logging.INFO
-            }
-        )
-
     Args:
         logger_name: name of the logger. Default is logging_handler._DEFAULT_LOGGER_NAME
         logging_level: logging level of the logger. Default is logging.DEBUG
-        handler_logging_level: dict of handler name and it's logging level
-        log_file_path: file path of where the logging is gonna get outputted. Default is "logging.log"
+        handlers: list or tuple of logging handlers or a single handler. Default is None, which creates stream and file handlers (see create_file_logging_handler and create_stream_logging_handler)
 
     Returns:
         logger object
     """
-    logger = logging.getLogger(logger_name)
+    logger = getLogger(logger_name)
     logger.setLevel(logging_level)
 
-    fileHandler = logging.FileHandler(log_file_path, mode="w")
-    streamHandler = logging.StreamHandler()
+    if not handlers:
+        handlers = (
+            create_stream_logging_handler(),
+            create_file_logging_handler(),
+        )
 
-    fileHandler.setFormatter(logging.Formatter(_LOGGING_FMT))
-    streamHandler.setFormatter(_CustomFormatter())
+    if isinstance(handlers, Handler):
+        handlers = [handlers]
 
-    allowed_handlers = {"stream": streamHandler, "file": fileHandler}
+    for handler in handlers:
+        logger.addHandler(handler)
 
-    if handler_logging_level:
-        for handler_name, level in handler_logging_level:
-            try:
-                handler = allowed_handlers[handler_name]
-            except KeyError:
-                raise KeyError(
-                    f"{handler_name} is not a support handler. "
-                    f"The allowed handlers are {list(allowed_handlers.keys())}"
-                )
-
-            handler.setLevel(level)
-
-    logger.addHandler(streamHandler)
-    logger.addHandler(fileHandler)
     return logger
 
 
@@ -111,7 +154,7 @@ def remove_log_handlers(logger_name=_DEFAULT_LOGGER_NAME):
     Returns:
         None
     """
-    logger = logging.getLogger(name=logger_name)
+    logger = getLogger(name=logger_name)
     if not logger.handlers:
         return
     for hdlr in logger.handlers:
