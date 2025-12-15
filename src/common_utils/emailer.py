@@ -78,8 +78,8 @@ def build_html_email_meesage(
 
 
 def send(
-    str_message: MIMEText = None,
-    html_message: MIMEText = None,
+    str_message: str = None,
+    html_message: str = None,
     diy_message: MIMEMultipart = None,
     subject: str = None,
     recipients: list = None,
@@ -124,7 +124,14 @@ def send(
             "Cannot combine diy_message with str_message or html_message. Both str_message and html_message should be None if diy_message is provided."
         )
 
-    msg = diy_message or MIMEMultipart()
+    if diy_message:
+        if not isinstance(diy_message, MIMEMultipart):
+            raise ValueError(
+                f"diy_message must be of type MIMEMultipart but got {type(diy_message)}"
+            )
+        msg = diy_message
+    else:
+        msg = MIMEMultipart()
     msg["Subject"] = subject or f"Email From {username}"
     msg["From"] = username
 
