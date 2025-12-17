@@ -77,15 +77,19 @@ class DatabaseConnection(ABC):
         self.database_connection.close()
 
     @abstractmethod
-    def select_into_dataframe(query, self):
+    def select_into_dataframe(query, self, **kwargs):
         """
         Select data from a table or view into a pandas dataframe
-        Note that query can be sql string or dictionary.
+        Note that query can be sql string or dictionary. This is effectively a
+        wrapper for pandas.read_sql_query.
 
-        The dictionary need to be of the form below. Note that filters and columns
+        If a dictionary is used, it needs to be of the form below. Note that filters and columns
         can be {} and [] respectively to indicate no filter were chosen and
         all columns are selected. You can use this if the query is a simple
         select query.
+
+        It is advisable to use the dtype and parse_dates paramters from pandas
+        to ensure the datatype of the
 
         >>> {
             'table':'table name',
@@ -103,7 +107,7 @@ class DatabaseConnection(ABC):
         Return:
             pandas dataframe
         """
-        pass
+        return pd.read_sql_query(query, self.database_connection, **kwargs)
 
     @abstractmethod
     def execute_statement(self, query):
@@ -197,8 +201,8 @@ class PostgresConnection(DatabaseConnection, connection_engine="postgres"):
             raise e
 
     @QueryParser
-    def select_into_dataframe(self, query):
-        return pd.read_sql_query(query, self.database_connection)
+    def select_into_dataframe(self, query, **kwargs):
+        return super(self).select_into_dataframe(query, **kwargs)
 
     @QueryParser
     def execute_statement(self, query):
@@ -229,9 +233,7 @@ class PostgresConnection(DatabaseConnection, connection_engine="postgres"):
         sql = file._read_internal_resource(
             f"{self._resource_path}/{self.connection_engine}/get_all_objects.sql"
         )
-        return self.select_into_dataframe(
-            sql,
-        )
+        return self.select_into_dataframe(sql)
 
     def get_table_details(self, table_name, schema_name):
         sql = file._read_internal_resource(
@@ -240,9 +242,7 @@ class PostgresConnection(DatabaseConnection, connection_engine="postgres"):
             schema=schema_name,
             table_name=table_name,
         )
-        return self.select_into_dataframe(
-            sql,
-        )
+        return self.select_into_dataframe(sql)
 
 
 class SqliteConnection(DatabaseConnection, connection_engine="sqlite"):
@@ -262,8 +262,8 @@ class SqliteConnection(DatabaseConnection, connection_engine="sqlite"):
             raise e
 
     @QueryParser
-    def select_into_dataframe(self, query):
-        return pd.read_sql_query(query, self.database_connection)
+    def select_into_dataframe(self, query, **kwargs):
+        return super(self).select_into_dataframe(query, **kwargs)
 
     @QueryParser
     def execute_statement(self, query):
@@ -295,9 +295,7 @@ class SqliteConnection(DatabaseConnection, connection_engine="sqlite"):
         ).format(
             table_name=table_name,
         )
-        return self.select_into_dataframe(
-            sql,
-        )
+        return self.select_into_dataframe(sql)
 
 
 if __name__ == "__main__":
