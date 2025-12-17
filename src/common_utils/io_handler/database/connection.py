@@ -107,7 +107,7 @@ class DatabaseConnection(ABC):
         Return:
             pandas dataframe
         """
-        return pd.read_sql_query(query, self.database_connection, **kwargs)
+        pass
 
     @abstractmethod
     def execute_statement(self, query):
@@ -202,7 +202,7 @@ class PostgresConnection(DatabaseConnection, connection_engine="postgres"):
 
     @QueryParser
     def select_into_dataframe(self, query, **kwargs):
-        return super().select_into_dataframe(query, **kwargs)
+        return pd.read_sql_query(query, self.database_connection, **kwargs)
 
     @QueryParser
     def execute_statement(self, query):
@@ -263,7 +263,7 @@ class SqliteConnection(DatabaseConnection, connection_engine="sqlite"):
 
     @QueryParser
     def select_into_dataframe(self, query, **kwargs):
-        return super().select_into_dataframe(query, **kwargs)
+        return pd.read_sql_query(query, self.database_connection, **kwargs)
 
     @QueryParser
     def execute_statement(self, query):
