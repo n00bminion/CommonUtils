@@ -131,10 +131,10 @@ def send(
             )
         msg = diy_message
     else:
-        msg = MIMEMultipart("alternative")
+        msg = MIMEMultipart()  # "alternative")
     msg["Subject"] = subject or f"Email From {username}"
     msg["From"] = username
-    msg["To"] = ", ".join(recipients)
+    # msg["To"] = ", ".join(recipients)
 
     if str_message:
         msg.attach(MIMEText(str_message, "plain"))
