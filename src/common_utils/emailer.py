@@ -1,4 +1,5 @@
 import smtplib
+from email.message import EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -125,7 +126,7 @@ def send(
         )
 
     if diy_message:
-        if not isinstance(diy_message, MIMEMultipart):
+        if not isinstance(diy_message, (MIMEMultipart, EmailMessage)):
             raise ValueError(
                 f"diy_message must be of type MIMEMultipart but got {type(diy_message)}"
             )
