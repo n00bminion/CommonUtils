@@ -131,7 +131,7 @@ def send(
             )
         msg = diy_message
     else:
-        msg = MIMEMultipart()
+        msg = MIMEMultipart("alternative")
     msg["Subject"] = subject or f"Email From {username}"
     msg["From"] = username
 
