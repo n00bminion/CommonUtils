@@ -7,9 +7,7 @@ import yaml
 import tomllib
 import pypdf
 import pandas as pd
-
-# this path is the default path for all cases
-ROOT_PATH = Path.home().resolve()
+import os
 
 # anything that's not implemented is defaulted to .read()/.write()
 SUPPORTED_FILE_EXTENSION = {
@@ -74,10 +72,22 @@ def prepare_file_path(file_path):
     # get absolute path
     save_path = Path(file_path).resolve()
     parent_dir = save_path.parent
+    operating_system = os.name
 
-    # expects file path to start with "C:\Users\name"
-    if not parent_dir.is_relative_to(ROOT_PATH):
-        raise ValueError(f"{save_path} path should start with {ROOT_PATH}")
+    # expects file path to start with "C:\Users\name" or "D:\" on windows
+    if operating_system == "nt":
+        c_drive = Path.home().resolve()
+        d_drive = Path("D:/")
+        for drive_path in d_drive, c_drive:
+            if parent_dir.is_relative_to(drive_path):
+                break
+        else:
+            raise ValueError(f"{save_path} path should start with {drive_path}")
+
+    if operating_system == "linux":
+        raise NotImplementedError(
+            "common_utils.io_handler.file.prepare_file_path currently does not support running on Linux... Review and update the code accordingly."
+        )
 
     # create the dir and any subdirs that doesn't exist
     parent_dir.mkdir(parents=True, exist_ok=True)
