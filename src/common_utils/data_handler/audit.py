@@ -1,8 +1,9 @@
 import pandas as pd
 import socket
+from common_utils.datetime_handler import get_pandas_timestamp
 
 DEFAULT_AUDIT_COLUMNS = {
-    "_created_date": pd.Timestamp.now,
+    "_created_date": get_pandas_timestamp,
     "_created_by": socket.gethostname,
 }
 
@@ -35,11 +36,12 @@ def add_audit_columns(data, audit_columns_dict=None):
             f"but got {type(audit_columns_dict)}"
         )
 
-    for col_name, col_func in audit_columns_dict.items():
-        # overwrite existing columns if they exist
-        data[col_name] = col_func()
-
-    return data
+    return data.assign(
+        **{
+            col_name: col_function()
+            for col_name, col_function in audit_columns_dict.items()
+        }
+    )
 
 
 def remove_audit_columns(data, audit_columns_list=None):
@@ -68,9 +70,11 @@ def remove_audit_columns(data, audit_columns_list=None):
         )
 
     existing_columns = list(set(audit_columns_list).intersection(set(data.columns)))
-    data = data.drop(columns=existing_columns)
 
-    return data
+    if not existing_columns:
+        raise ValueError("Cannot drop audit columns, no audit columns were found...")
+
+    return data.drop(columns=existing_columns)
 
 
 if __name__ == "__main__":
