@@ -58,7 +58,9 @@ def update_staging_table_status(
         nonmatching_columns (list | tuple): columns that are in both staging table and table. These columns are not used to determine if the records will be added/updated.
 
     """
-    staging_table_name = get_staging_table_name(table_name=table_name)
+    staging_table_name = get_staging_table_name(
+        database_connection=database_connection, table_name=table_name
+    )
 
     matching_str_columns = " and ".join(
         [f"stg.{column} = dlt.{column}" for column in matching_columns]
@@ -120,7 +122,9 @@ def sync_staging_table_to_source_table(
         audit_columns (list): list of audit columns. Defaults to None to use the pre-set columns (DEFAULT_AUDIT_COLUMNS) from common_utils.data_handler.audit
 
     """
-    staging_table_name = get_staging_table_name(table_name=table_name)
+    staging_table_name = get_staging_table_name(
+        database_connection=database_connection, table_name=table_name
+    )
 
     if not audit_columns:
         audit_columns = list(DEFAULT_AUDIT_COLUMNS.keys())
@@ -169,7 +173,9 @@ def is_new_data_available(
     Returns:
         True/False: returns boolean if new or updated records are available in the staging table
     """
-    staging_table_name = get_staging_table_name(table_name=table_name)
+    staging_table_name = get_staging_table_name(
+        database_connection=database_connection, table_name=table_name
+    )
 
     return (
         database_connection.select_into_dataframe(
