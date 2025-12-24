@@ -5,6 +5,13 @@ import sqlparse
 
 from common_utils.io_handler.database._query_transformer import _transform_kv_to_clause
 
+DEFAULT_SQLPARSE_KWARGS = dict(
+    keyword_case="upper",
+    use_space_around_operators=True,
+    reindent=True,
+    reindent_aligned=True,
+)
+
 
 class QueryParser:
     """
@@ -14,12 +21,7 @@ class QueryParser:
     def __init__(self, function):
         self.function = function
         self._expected_arguement = "query"
-        self._sqlparse_kwargs = dict(
-            keyword_case="upper",
-            use_space_around_operators=True,
-            reindent=True,
-            reindent_aligned=True,
-        )
+        self._sqlparse_kwargs = DEFAULT_SQLPARSE_KWARGS
 
     def __call__(self, *args, **kwargs):
         all_arguments_name = inspect.signature(self.function).parameters.keys()
@@ -69,7 +71,7 @@ class QueryParser:
     # using dictionary to filter simple query rather
     @parse.register
     def _parse_dict(self, query: dict):
-        # top level should have just 2 keys, table and filter
+        # top level should have 3 keys, table, columns and filters
         table = "table"
         columns = "columns"
         filters = "filters"
