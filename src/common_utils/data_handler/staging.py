@@ -1,8 +1,9 @@
 import re
 from common_utils.data_handler.audit import DEFAULT_AUDIT_COLUMNS
 
-# every table should have a staging table unless they are a meta/reference table.
-# let's try and enforce standard to the table names?
+# every table should have a staging table unless they are a meta/reference table
+# the staging table should just be table name with _staging suffix
+STAGING_TABLE_SUFFIX = "_staging"
 
 
 class MissingStagingTableError(Exception):
@@ -20,7 +21,8 @@ def get_staging_table_name(database_connection, table_name):
         staging_table_name: name of the staging table
     """
     # replace square brackets if any
-    staging_table_name = f"{re.sub(r'\[|\]', '', table_name)}_staging"
+    staging_table_name = re.sub(r"\[|\]", "", table_name) + STAGING_TABLE_SUFFIX
+    # getting just the table name so remove any reference for schema if passed in
     staging_table_name_only = staging_table_name.split(".")[-1]
     if (
         len(
@@ -157,6 +159,16 @@ def is_new_data_available(
     database_connection,
     table_name: str,
 ):
+    """
+    Function to check if there are new/updated data for the table passed in.
+
+    Args:
+        database_connection: database connection object
+        table_name (str): name of table
+
+    Returns:
+        True/False: returns boolean if new or updated records are available in the staging table
+    """
     staging_table_name = get_staging_table_name(table_name=table_name)
 
     return (
