@@ -1,30 +1,17 @@
 import re
 from common_utils.data_handler.audit import DEFAULT_AUDIT_COLUMNS
 
+# every table should have a staging table unless they are a meta/reference table.
+# let's try and enforce standard to the table names?
 
-def _sanitise_parameters(
-    table_name, staging_table_name, matching_columns, nonmatching_columns
-):
+
+class MissingStagingTableError(Exception):
+    pass
+
+
+def get_staging_table_name(database_connection, table_name):
     """
-    Private function to help sanitise functions in this module, not for external use.
-    """
-    if not staging_table_name:
-        staging_table_name = get_staging_table_name(table_name)
-
-    assert isinstance(matching_columns, list), (
-        f"matching_columns should either be a tuple or list but got {type(matching_columns)} instead"
-    )
-
-    assert isinstance(nonmatching_columns, list), (
-        f"nonmatching_columns should either be a tuple or list but got {type(nonmatching_columns)} instead"
-    )
-
-    return staging_table_name, matching_columns, nonmatching_columns
-
-
-def get_staging_table_name(table_name):
-    """
-    Autogenerate staging table name. This enforces staging table name format.
+    Get staging table name from the table name. This enforces staging table name format
 
     Args:
         table_name (str): name of the table
@@ -33,7 +20,21 @@ def get_staging_table_name(table_name):
         staging_table_name: name of the staging table
     """
     # replace square brackets if any
-    return f"{re.sub(r'\[|\]', '', table_name)}_staging"
+    staging_table_name = f"{re.sub(r'\[|\]', '', table_name)}_staging"
+    staging_table_name_only = staging_table_name.split(".")[-1]
+    if (
+        len(
+            database_connection.get_all_objects()
+            .query("object_type == 'table'")
+            .object_name.str.contains(staging_table_name_only)
+        )
+        == 1
+    ):
+        return staging_table_name
+
+    raise MissingStagingTableError(
+        f"Staging table for {table_name} does not exist. The expected staging table name is {staging_table_name}"
+    )
 
 
 def update_staging_table_status(
@@ -41,7 +42,6 @@ def update_staging_table_status(
     table_name: str,
     matching_columns: list,
     nonmatching_columns: list,
-    staging_table_name: str = None,
 ):
     """
     Identify records in staging table and update the status column with the appropriate status.
@@ -54,13 +54,9 @@ def update_staging_table_status(
         table_name (str): name of table
         matching_columns (list | tuple): columns that are in both staging table and table. These columns determine if the records will be added/updated.
         nonmatching_columns (list | tuple): columns that are in both staging table and table. These columns are not used to determine if the records will be added/updated.
-        staging_table_name (str, optional): name of staging table. Defaults to None to use "get_staging_table_name" function to automatically derive the staging table name (This is the preferred method)
 
     """
-
-    staging_table_name, matching_columns, nonmatching_columns = _sanitise_parameters(
-        table_name, staging_table_name, matching_columns, nonmatching_columns
-    )
+    staging_table_name = get_staging_table_name(table_name=table_name)
 
     matching_str_columns = " and ".join(
         [f"stg.{column} = dlt.{column}" for column in matching_columns]
@@ -109,7 +105,6 @@ def sync_staging_table_to_source_table(
     table_name: str,
     matching_columns: list | tuple,
     nonmatching_columns: list | tuple,
-    staging_table_name: str = None,
     audit_columns: list = None,
 ):
     """
@@ -120,13 +115,10 @@ def sync_staging_table_to_source_table(
         table_name (str): name of table
         matching_columns (list | tuple): columns that are in both staging table and table. These columns determine if the records will be added/updated.
         nonmatching_columns (list | tuple): columns that are in both staging table and table. These columns are not used to determine if the records will be added/updated.
-        staging_table_name (str, optional): name of staging table. Defaults to None to use "get_staging_table_name" function to automatically derive the staging table name (This is the preferred method)
         audit_columns (list): list of audit columns. Defaults to None to use the pre-set columns (DEFAULT_AUDIT_COLUMNS) from common_utils.data_handler.audit
 
     """
-    staging_table_name, matching_columns, nonmatching_columns = _sanitise_parameters(
-        table_name, staging_table_name, matching_columns, nonmatching_columns
-    )
+    staging_table_name = get_staging_table_name(table_name=table_name)
 
     if not audit_columns:
         audit_columns = list(DEFAULT_AUDIT_COLUMNS.keys())
@@ -164,10 +156,8 @@ def sync_staging_table_to_source_table(
 def is_new_data_available(
     database_connection,
     table_name: str,
-    staging_table_name: str = None,
 ):
-    if not staging_table_name:
-        staging_table_name = get_staging_table_name(table_name)
+    staging_table_name = get_staging_table_name(table_name=table_name)
 
     return (
         database_connection.select_into_dataframe(
@@ -179,7 +169,3 @@ def is_new_data_available(
         )["data_count"].item()
         > 0
     )
-
-
-if __name__ == "__main__":
-    print(get_staging_table_name("[schema].abc"))
