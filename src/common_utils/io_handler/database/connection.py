@@ -8,8 +8,12 @@ import sqlalchemy
 from sqlalchemy import text
 
 # local module
+from common_utils import __name__ as pkg_name
 from common_utils.io_handler import file
 from common_utils.io_handler.database.query import QueryParser
+
+_PATH_LIST = Path(__file__).parts
+_RESOURCE_PATH = "/".join(_PATH_LIST[_PATH_LIST.index(pkg_name) : -1])
 
 
 class DatabaseConnection(ABC):
@@ -47,7 +51,6 @@ class DatabaseConnection(ABC):
     """
 
     _registry = {}
-    _resource_path = "sql_handler/resource"
 
     def __init_subclass__(cls, connection_engine, **kwargs):
         # register the child classes
@@ -231,13 +234,13 @@ class PostgresConnection(DatabaseConnection, connection_engine="postgres"):
 
     def get_all_objects(self):
         sql = file._read_internal_resource(
-            f"{self._resource_path}/{self.connection_engine}/get_all_objects.sql"
+            f"{_RESOURCE_PATH}/{self.connection_engine}/get_all_objects.sql"
         )
         return self.select_into_dataframe(sql)
 
     def get_table_details(self, table_name, schema_name):
         sql = file._read_internal_resource(
-            f"{self._resource_path}/{self.connection_engine}/get_object_details.sql"
+            f"{_RESOURCE_PATH}/{self.connection_engine}/get_object_details.sql"
         ).format(
             schema=schema_name,
             table_name=table_name,
@@ -285,13 +288,13 @@ class SqliteConnection(DatabaseConnection, connection_engine="sqlite"):
 
     def get_all_objects(self):
         sql = file._read_internal_resource(
-            f"{self._resource_path}/{self.connection_engine}/get_all_objects.sql"
+            f"{_RESOURCE_PATH}/{self.connection_engine}/get_all_objects.sql"
         )
         return self.select_into_dataframe(sql)
 
     def get_table_details(self, table_name):
         sql = file._read_internal_resource(
-            f"{self._resource_path}/{self.connection_engine}/get_object_details.sql"
+            f"{_RESOURCE_PATH}/{self.connection_engine}/get_object_details.sql"
         ).format(
             table_name=table_name,
         )
@@ -313,4 +316,4 @@ if __name__ == "__main__":
             }
         )
 
-        df
+    #     df
