@@ -62,32 +62,42 @@ def update_staging_table_status(
         table_name, staging_table_name, matching_columns, nonmatching_columns
     )
 
-    sql_str_columns = ", ".join(matching_columns + nonmatching_columns)
-
-    join_columns = " and ".join(
+    matching_str_columns = " and ".join(
         [f"stg.{column} = dlt.{column}" for column in matching_columns]
+    )
+
+    nonmatching_str_columns = " and ".join(
+        [f"stg.{column} != tgt.{column}" for column in nonmatching_columns]
     )
 
     for step, query in {
         # identify the new records if any
-        "Identified new records": f"""
+        "Setting new records status to 'new'": f"""
             update {staging_table_name} as stg
                 set status = 'new'
                 from 
                 (
-                    select {sql_str_columns} 
+                    select {", ".join(matching_columns)} 
                     from {staging_table_name}
                     except
-                    select {sql_str_columns} 
+                    select {", ".join(matching_columns)} 
                     from {table_name}
                 ) as dlt
-                where {join_columns}
+                where {matching_str_columns}
         """,
         # otherwise update the rest of the records
-        "Identified old records": f"""
+        "Setting old records with updated data status to 'update'": f"""
+            update {staging_table_name} as stg
+            set stg.status = 'update'
+            from {table_name} src
+            where stg.status != 'new'
+            and {matching_str_columns.replace("dlt", "src")}  
+            and {nonmatching_str_columns}
+        """,
+        "Setting leftover old records status to 'old'": f"""
             update {staging_table_name}
-            set status = 'update'
-            where status != 'new'
+            set status = 'old'
+            where status not in ('new','update')
         """,
     }.items():
         database_connection.execute_statement(query)
@@ -128,7 +138,7 @@ def sync_staging_table_to_source_table(
         [f"tgt.{column} = stg.{column}" for column in all_columns]
     )
 
-    join_columns = " and ".join(
+    matching_str_columns = " and ".join(
         [f"tgt.{column} = stg.{column}" for column in matching_columns]
     )
 
@@ -144,11 +154,31 @@ def sync_staging_table_to_source_table(
             set {update_columns}
             from {staging_table_name} stg
             where status = 'update'
-            and {join_columns}
+            and {matching_str_columns}
         """,
     }.items():
         database_connection.execute_statement(query)
         print(f"{step} in {table_name}")
+
+
+def is_new_data_available(
+    database_connection,
+    table_name: str,
+    staging_table_name: str = None,
+):
+    if not staging_table_name:
+        staging_table_name = get_staging_table_name(table_name)
+
+    return (
+        database_connection.select_into_dataframe(
+            f"""
+            SELECT COUNT(*) data_count
+            FROM {staging_table_name}
+            WHERE status in ('new','update')
+        """
+        )["data_count"].item()
+        > 0
+    )
 
 
 if __name__ == "__main__":
