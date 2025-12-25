@@ -69,7 +69,7 @@ def update_staging_table_status(
     )
 
     nonmatching_str_columns = " and ".join(
-        [f"stg.{column} != tgt.{column}" for column in nonmatching_columns]
+        [f"stg.{column} != src.{column}" for column in nonmatching_columns]
     )
 
     for step, query in {
