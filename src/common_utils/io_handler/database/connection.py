@@ -13,7 +13,9 @@ from common_utils.io_handler import file
 from common_utils.io_handler.database.query import QueryParser
 
 _PATH_LIST = Path(__file__).parts
-_RESOURCE_PATH = "/".join(_PATH_LIST[1 + _PATH_LIST.index(pkg_name) : -1])
+_RESOURCE_PATH = "/".join(
+    [*_PATH_LIST[1 + _PATH_LIST.index(pkg_name) : -1], "resource"]
+)
 
 
 class DatabaseConnection(ABC):
