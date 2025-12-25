@@ -90,7 +90,7 @@ def update_staging_table_status(
         # otherwise update the rest of the records
         "Setting old records with updated data status to 'update'": f"""
             update {staging_table_name} as stg
-            set stg.status = 'update'
+            set status = 'update'
             from {table_name} src
             where stg.status != 'new'
             and {matching_str_columns.replace("dlt", "src")}  
@@ -133,10 +133,7 @@ def sync_staging_table_to_source_table(
 
     all_columns = matching_columns + nonmatching_columns + audit_columns
     sql_str_columns = ", ".join(all_columns)
-
-    update_columns = ", ".join(
-        [f"tgt.{column} = stg.{column}" for column in all_columns]
-    )
+    update_columns = ", ".join([f"{column} = stg.{column}" for column in all_columns])
 
     matching_str_columns = " and ".join(
         [f"tgt.{column} = stg.{column}" for column in matching_columns]
