@@ -24,11 +24,13 @@ def get_staging_table_name(database_connection, table_name):
     staging_table_name = re.sub(r"\[|\]", "", table_name) + STAGING_TABLE_SUFFIX
     # getting just the table name so remove any reference for schema if passed in
     staging_table_name_only = staging_table_name.split(".")[-1]
-    if (
-        len(
+    # using bool because if not, comparison will give np.True
+    if bool(
+        (
             database_connection.get_all_objects()
             .query("object_type == 'table'")
             .object_name.str.contains(staging_table_name_only)
+            .sum()
         )
         == 1
     ):
