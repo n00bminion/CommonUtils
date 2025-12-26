@@ -1,5 +1,7 @@
 import re
 from common_utils.data_handler.audit import DEFAULT_AUDIT_COLUMNS
+import pandas as pd
+from functools import cache
 
 # every table should have a staging table unless they are a meta/reference table
 # the staging table should just be table name with _staging suffix
@@ -8,6 +10,17 @@ STAGING_TABLE_SUFFIX = "_staging"
 
 class MissingStagingTableError(Exception):
     pass
+
+
+@cache
+def derive_staging_table_name_tuple(table_name: str):
+    # replace square brackets if any
+    staging_table_name = re.sub(r"\[|\]", "", table_name) + STAGING_TABLE_SUFFIX
+    # return schema and table name
+    _ = staging_table_name.split(".")
+    if len(_) == 1:
+        return None, _[0]
+    return _
 
 
 def get_staging_table_name(database_connection, table_name):
@@ -20,10 +33,14 @@ def get_staging_table_name(database_connection, table_name):
     Returns:
         staging_table_name: name of the staging table
     """
-    # replace square brackets if any
-    staging_table_name = re.sub(r"\[|\]", "", table_name) + STAGING_TABLE_SUFFIX
-    # getting just the table name so remove any reference for schema if passed in
-    staging_table_name_only = staging_table_name.split(".")[-1]
+    schema, staging_table_name_only = derive_staging_table_name_tuple(
+        table_name=table_name
+    )
+    # if sqlite then None schema so we don't want that in the name
+    staging_table_name = (
+        f"{schema}.{staging_table_name_only}" if schema else staging_table_name_only
+    )
+
     # using bool because if not, comparison will give np.True
     if bool(
         (
@@ -39,6 +56,37 @@ def get_staging_table_name(database_connection, table_name):
     raise MissingStagingTableError(
         f"Staging table for {table_name} does not exist. The expected staging table name is {staging_table_name}"
     )
+
+
+def populate_staging_table(database_connection, table_name: str, data: pd.DataFrame):
+    """
+    Simple function to flush old data and replace staging table with new data
+
+    Args:
+        database_connection: database connection object
+        table_name (str): name of the table_
+        data (pd.DataFrame): dataframe of the new data
+    """
+    # schema is None if there's no schema in the table name
+    schema, _ = derive_staging_table_name_tuple(table_name=table_name)
+
+    staging_table_name = get_staging_table_name(
+        database_connection=database_connection, table_name=table_name
+    )
+
+    database_connection.execute_statement(f"""DELETE FROM {staging_table_name}""")
+
+    kwargs = {
+        k: v
+        for k, v in dict(
+            dataframe=data,
+            table_name=staging_table_name,
+            schema=schema,
+        ).items()
+        if v is not None
+    }
+
+    database_connection.insert_into_table(**kwargs)
 
 
 def update_staging_table_status(
