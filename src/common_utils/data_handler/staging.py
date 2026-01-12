@@ -22,6 +22,20 @@ class MultipleStagingTableFoundError(Exception):
     pass
 
 
+def combine_schema_and_table_name(schema_name: str, table_name: str) -> str:
+    """
+    Combine schema name and table name into a full table name.
+
+    Args:
+        schema_name (str): The schema name.
+        table_name (str): The table name.
+
+    Returns:
+        str: The combined full table name in the format 'schema_name.table_name'.
+    """
+    return f"{schema_name}.{table_name}" if schema_name else table_name
+
+
 @cache
 def derive_staging_table_name_from_table_name(
     table_name: str,
@@ -132,6 +146,7 @@ def update_staging_table_status(
     table_name: str,
     matching_columns: list,
     nonmatching_columns: list,
+    schema_name=None,
 ):
     """
     Identify records in staging table and update the status column with the appropriate status.
@@ -144,10 +159,17 @@ def update_staging_table_status(
         table_name (str): name of table
         matching_columns (list | tuple): columns that are in both staging table and table. These columns determine if the records will be added/updated.
         nonmatching_columns (list | tuple): columns that are in both staging table and table. These columns are not used to determine if the records will be added/updated.
+        schema_name (str, optional): schema name for the staging table. Defaults to None.
 
     """
     staging_table_name = get_staging_table_name(
-        database_connection=database_connection, table_name=table_name
+        database_connection=database_connection,
+        table_name=table_name,
+        schema_name=schema_name,
+    )
+
+    table_name = combine_schema_and_table_name(
+        schema_name=schema_name, table_name=table_name
     )
 
     matching_str_columns = " and ".join(
@@ -198,6 +220,7 @@ def sync_staging_table_to_source_table(
     matching_columns: list | tuple,
     nonmatching_columns: list | tuple,
     audit_columns: list = None,
+    schema_name=None,
 ):
     """
     Load new records or update records in source table using staging table
@@ -211,9 +234,14 @@ def sync_staging_table_to_source_table(
 
     """
     staging_table_name = get_staging_table_name(
-        database_connection=database_connection, table_name=table_name
+        database_connection=database_connection,
+        table_name=table_name,
+        schema_name=schema_name,
     )
 
+    table_name = combine_schema_and_table_name(
+        schema_name=schema_name, table_name=table_name
+    )
     if not audit_columns:
         audit_columns = list(DEFAULT_AUDIT_COLUMNS.keys())
 
@@ -247,6 +275,7 @@ def sync_staging_table_to_source_table(
 def is_new_data_available(
     database_connection,
     table_name: str,
+    schema_name=None,
 ):
     """
     Function to check if there are new/updated data for the table passed in.
@@ -259,7 +288,9 @@ def is_new_data_available(
         True/False: returns boolean if new or updated records are available in the staging table
     """
     staging_table_name = get_staging_table_name(
-        database_connection=database_connection, table_name=table_name
+        database_connection=database_connection,
+        table_name=table_name,
+        schema_name=schema_name,
     )
 
     return (
