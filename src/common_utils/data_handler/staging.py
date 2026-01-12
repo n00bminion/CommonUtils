@@ -89,14 +89,14 @@ def get_staging_table_name(database_connection, table_name, schema_name=None):
     if schema_name:
         query += f" & schema_name == '{schema_name}'"
 
-    staging_table_meta = database_connection.get_all_objects().query(query)
-
-    if staging_table_meta.size() == 1:
+    if (
+        expect_row_count := len(database_connection.get_all_objects().query(query))
+    ) == 1:
         return (
             f"{schema_name}.{staging_table_name}" if schema_name else staging_table_name
         )
 
-    elif staging_table_meta.size() > 1:
+    elif expect_row_count > 1:
         raise MultipleStagingTableFoundError(
             f"Multiple staging tables found for {table_name}. The expected staging table name is {staging_table_name}"
         )
