@@ -17,6 +17,13 @@ _RESOURCE_PATH = "/".join(
     [*_PATH_LIST[1 + _PATH_LIST.index(pkg_name) : -1], "resource"]
 )
 
+ALL_OBJECTS_REQUIRED_COLUMNS = [
+    "object_type",
+    "object_name",
+    "table_name",
+    "schema_name",
+]
+
 
 class DatabaseConnection(ABC):
     """
@@ -238,7 +245,7 @@ class PostgresConnection(DatabaseConnection, connection_engine="postgres"):
         sql = file._read_internal_resource(
             f"{_RESOURCE_PATH}/{self.connection_engine}/get_all_objects.sql"
         )
-        return self.select_into_dataframe(sql)
+        return self.select_into_dataframe(sql)[ALL_OBJECTS_REQUIRED_COLUMNS]
 
     def get_table_details(self, table_name, schema_name):
         sql = file._read_internal_resource(
@@ -292,7 +299,12 @@ class SqliteConnection(DatabaseConnection, connection_engine="sqlite"):
         sql = file._read_internal_resource(
             f"{_RESOURCE_PATH}/{self.connection_engine}/get_all_objects.sql"
         )
-        return self.select_into_dataframe(sql)
+        all_obj = self.select_into_dataframe(sql)
+        # simulate schema by using the file name without extension, same as postgres schema
+        all_obj.db_file = all_obj.db_file.apply(lambda path: Path(path).stem)
+        return all_obj.rename(columns={"db_file": "schema_name"})[
+            ALL_OBJECTS_REQUIRED_COLUMNS
+        ]
 
     def get_table_details(self, table_name):
         sql = file._read_internal_resource(
@@ -308,14 +320,15 @@ if __name__ == "__main__":
         database_file_path="test.db",
         connection_engine="sqlite",
     ) as conn:
-        conn.execute_statement("create table test_table (id int)")
+        # conn.execute_statement("create table test_table (id int)")
 
-        df = conn.select_into_dataframe(
-            {
-                "table": "test_table",
-                "columns": [],
-                "filters": {"id": ["1"]},
-            }
-        )
+        df = conn.get_all_objects()
+    #     df = conn.select_into_dataframe(
+    #         {
+    #             "table": "test_table",
+    #             "columns": [],
+    #             "filters": {"id": ["1"]},
+    #         }
+    #     )
 
-    #     df
+    # #     df

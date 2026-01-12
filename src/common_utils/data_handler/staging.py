@@ -1,10 +1,12 @@
-import re
 from common_utils.data_handler.audit import DEFAULT_AUDIT_COLUMNS
 import pandas as pd
 from functools import cache
+import re
+import warnings
 
 # every table should have a staging table unless they are a meta/reference table
 # the staging table should just be table name with _staging suffix
+STAGING_TABLE_PREFIX = ""
 STAGING_TABLE_SUFFIX = "_staging"
 
 
@@ -12,53 +14,87 @@ class MissingStagingTableError(Exception):
     pass
 
 
+class MissingStagingTableSchemaError(Exception):
+    pass
+
+
+class MultipleStagingTableFoundError(Exception):
+    pass
+
+
 @cache
-def derive_staging_table_name_tuple(table_name: str):
-    # replace square brackets if any
-    staging_table_name = re.sub(r"\[|\]", "", table_name) + STAGING_TABLE_SUFFIX
-    # return schema and table name
-    _ = staging_table_name.split(".")
-    if len(_) == 1:
-        return None, _[0]
-    return _
-
-
-def get_staging_table_name(database_connection, table_name):
+def derive_staging_table_name_from_table_name(
+    table_name: str,
+    staging_table_name_prefix: str = STAGING_TABLE_PREFIX,
+    staging_table_name_suffix: str = STAGING_TABLE_SUFFIX,
+):
     """
-    Get staging table name from the table name. This enforces staging table name format
+    Enforce staging table name format from the table name
 
     Args:
         table_name (str): name of the table
+        staging_table_name_prefix (str, optional): prefix for the staging table name. Defaults to ""
+        staging_table_name_suffix (str, optional): suffix for the staging table name. Defaults to STAGING_TABLE_SUFFIX
 
     Returns:
         staging_table_name: name of the staging table
     """
-    schema, staging_table_name_only = derive_staging_table_name_tuple(
+    # replace square brackets if any
+    table_name = re.sub(r"\[|\]", "", table_name)
+    return f"{staging_table_name_prefix}{table_name}{staging_table_name_suffix}"
+
+
+def get_staging_table_name(database_connection, table_name, schema_name=None):
+    """
+    Get staging table name from the table name. This enforces staging table name format
+
+    Args:
+        database_connection: database connection object
+        table_name (str): name of the table
+        schema_name (str): schema of the table, defaults to None
+    Returns:
+        staging_table_name: name of the staging table
+    """
+    staging_table_name = derive_staging_table_name_from_table_name(
         table_name=table_name
     )
-    # if sqlite then None schema so we don't want that in the name
-    staging_table_name = (
-        f"{schema}.{staging_table_name_only}" if schema else staging_table_name_only
-    )
 
-    # using bool because if not, comparison will give np.True
-    if bool(
-        (
-            database_connection.get_all_objects()
-            .query("object_type == 'table'")
-            .object_name.str.contains(staging_table_name_only)
-            .sum()
+    query = "object_type == 'table' & table_name == @staging_table_name"
+
+    # for non-sqlite db, schema_name is required
+    if database_connection.connection_engine != "sqlite":
+        if not schema_name or not schema_name.strip():
+            raise MissingStagingTableSchemaError(
+                "Staging table schema is only supported for non-sqlite database engine, provide schema_name argument"
+            )
+    else:
+        warnings.warn(
+            f"schema_name argument '{schema_name}' was passed in but is ignored for sqlite database engine"
         )
-        == 1
-    ):
-        return staging_table_name
+
+    if schema_name:
+        query += f" & schema_name == '{schema_name}'"
+
+    staging_table_meta = database_connection.get_all_objects().query(query)
+
+    if staging_table_meta.size() == 1:
+        return (
+            f"{schema_name}.{staging_table_name}" if schema_name else staging_table_name
+        )
+
+    elif staging_table_meta.size() > 1:
+        raise MultipleStagingTableFoundError(
+            f"Multiple staging tables found for {table_name}. The expected staging table name is {staging_table_name}"
+        )
 
     raise MissingStagingTableError(
         f"Staging table for {table_name} does not exist. The expected staging table name is {staging_table_name}"
     )
 
 
-def populate_staging_table(database_connection, table_name: str, data: pd.DataFrame):
+def populate_staging_table(
+    database_connection, table_name: str, data: pd.DataFrame, schema_name=None
+):
     """
     Simple function to flush old data and replace staging table with new data
 
@@ -67,11 +103,11 @@ def populate_staging_table(database_connection, table_name: str, data: pd.DataFr
         table_name (str): name of the table_
         data (pd.DataFrame): dataframe of the new data
     """
-    # schema is None if there's no schema in the table name
-    schema, _ = derive_staging_table_name_tuple(table_name=table_name)
 
     staging_table_name = get_staging_table_name(
-        database_connection=database_connection, table_name=table_name
+        database_connection=database_connection,
+        table_name=table_name,
+        schema_name=schema_name,
     )
 
     database_connection.execute_statement(f"""DELETE FROM {staging_table_name}""")
@@ -80,8 +116,10 @@ def populate_staging_table(database_connection, table_name: str, data: pd.DataFr
         k: v
         for k, v in dict(
             dataframe=data,
-            table_name=staging_table_name,
-            schema=schema,
+            # only need table name here. schema is passed separately
+            # only case where this happens so just handle it here
+            table_name=staging_table_name.split(".")[-1],
+            schema=schema_name,
         ).items()
         if v is not None
     }
@@ -169,7 +207,7 @@ def sync_staging_table_to_source_table(
         table_name (str): name of table
         matching_columns (list | tuple): columns that are in both staging table and table. These columns determine if the records will be added/updated.
         nonmatching_columns (list | tuple): columns that are in both staging table and table. These columns are not used to determine if the records will be added/updated.
-        audit_columns (list): list of audit columns. Defaults to None to use the pre-set columns (DEFAULT_AUDIT_COLUMNS) from common_utils.data_handler.audit
+        audit_columns (list): list of audit columns. Defaults to None to use the pre-set columns (DEFAULT_AUDIT_COLUMNS) from common_utils.data_handler.audit but if there are no audit columns, then use empty list.
 
     """
     staging_table_name = get_staging_table_name(
