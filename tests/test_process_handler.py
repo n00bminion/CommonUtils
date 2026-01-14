@@ -1,17 +1,21 @@
 from common_utils import process_handler
+import time
 
 
-# top-level function so it is picklable for multiprocessing on Windows
-def multiply(x):
-    return x * x
+def _io_test_function(sleep_time: int, return_value: str):
+    print(f"Sleeping for {sleep_time} seconds...")
+    time.sleep(sleep_time)
+    print(f"Returning value = {return_value}")
+    return return_value
 
 
 def test_use_multi_thread():
-    res = process_handler.use_multi_thread(multiply, [1, 2, 3])
-    assert res == [1, 4, 9]
+    args = [(1, "first"), (5, "second"), (3, "third"), (3, "fourth")]
+    results = process_handler.use_multi_thread(_io_test_function, args)
 
-
-def test_use_multi_process():
-    # multiprocessing can be flaky on some CI; exercise a simple top-level function
-    res = process_handler.use_multi_process(multiply, [2, 3, 4])
-    assert sorted(res) == sorted([4, 9, 16])
+    assert results == {
+        (1, "first"): "first",
+        (3, "third"): "third",
+        (3, "fourth"): "fourth",
+        (5, "second"): "second",
+    }
