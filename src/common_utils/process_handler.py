@@ -1,17 +1,17 @@
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
-def use_executor(
-    executor_instance, function: callable, args: list[tuple], timeout: int = None
+def use_multi_threading(
+    function: callable, args: list[tuple], timeout: int = None, max_workers: int = None
 ) -> dict:
     """
     Execute function using multi-threading via ThreadPoolExecutor.
 
     Args:
-        executor_instance: An instance of ThreadPoolExecutor or ProcessPoolExecutor.
-        function (callable): function to be executed.
+        function (callable): IO-bound function to be executed.
         args (list[tuple]): List of argument tuples to pass to the function.
         timeout (int, optional): Maximum time to wait for each function call. Defaults to None.
+        max_workers (int, optional): Maximum number of worker threads. Defaults to None.
     Returns:
         dict: A dictionary mapping each argument tuple to its corresponding function result.
     """
@@ -23,7 +23,7 @@ def use_executor(
 
     results = {}
 
-    with executor_instance as executor:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(function, *arg): arg for arg in args}
         for future in as_completed(futures):
             arg = futures[future]
@@ -40,42 +40,6 @@ def use_executor(
                 results[arg] = None
 
         return results
-
-
-def use_multi_threading(
-    function: callable, args: list[tuple], timeout: int = None, max_workers: int = None
-) -> dict:
-    """
-    A wrapper around the generic use_executor function that execute IO-bound function using multi-threading via ThreadPoolExecutor.
-
-    Args:
-        function (callable): IO-bound function to be executed.
-        args (list[tuple]): List of argument tuples to pass to the function.
-        timeout (int, optional): Maximum time to wait for each function call. Defaults to None.
-        max_workers (int, optional): Maximum number of worker threads. Defaults to None.
-    Returns:
-        dict: A dictionary mapping each argument tuple to its corresponding function result.
-    """
-    with ThreadPoolExecutor(max_workers=max_workers) as tpe:
-        return use_executor(tpe, function, args, timeout)
-
-
-def use_multi_processing(
-    function: callable, args: list[tuple], timeout: int = None, max_workers: int = None
-) -> dict:
-    """
-    A wrapper around the generic use_executor function that execute CPU-bound function using multi-processing via ProcessPoolExecutor.
-
-    Args:
-        function (callable): CPU-bound function to be executed.
-        args (list[tuple]): List of argument tuples to pass to the function.
-        timeout (int, optional): Maximum time to wait for each function call. Defaults to None.
-        max_workers (int, optional): Maximum number of worker processes. Defaults to None.
-    Returns:
-        dict: A dictionary mapping each argument tuple to its corresponding function result.
-    """
-    with ProcessPoolExecutor(max_workers=max_workers) as ppe:
-        return use_executor(ppe, function, args, timeout)
 
 
 if __name__ == "__main__":

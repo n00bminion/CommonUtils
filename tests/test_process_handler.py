@@ -19,15 +19,3 @@ def test_use_multi_threading():
         (3, "fourth"): "fourth",
         (5, "second"): "second",
     }
-
-
-def test_use_multi_processing():
-    args = [(1, "first"), (5, "second"), (3, "third"), (3, "fourth")]
-    results = process_handler.use_multi_processing(_io_test_function, args)
-
-    assert results == {
-        (1, "first"): "first",
-        (3, "third"): "third",
-        (3, "fourth"): "fourth",
-        (5, "second"): "second",
-    }
