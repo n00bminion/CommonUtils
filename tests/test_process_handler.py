@@ -9,9 +9,21 @@ def _io_test_function(sleep_time: int, return_value: str):
     return return_value
 
 
-def test_use_multi_thread():
+def test_use_multi_threading():
     args = [(1, "first"), (5, "second"), (3, "third"), (3, "fourth")]
-    results = process_handler.use_multi_thread(_io_test_function, args)
+    results = process_handler.use_multi_threading(_io_test_function, args)
+
+    assert results == {
+        (1, "first"): "first",
+        (3, "third"): "third",
+        (3, "fourth"): "fourth",
+        (5, "second"): "second",
+    }
+
+
+def test_use_multi_processing():
+    args = [(1, "first"), (5, "second"), (3, "third"), (3, "fourth")]
+    results = process_handler.use_multi_processing(_io_test_function, args)
 
     assert results == {
         (1, "first"): "first",
