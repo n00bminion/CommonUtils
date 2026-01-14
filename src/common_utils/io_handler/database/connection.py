@@ -284,6 +284,7 @@ class SqliteConnection(DatabaseConnection, connection_engine="sqlite"):
             # If the body of the with statement finishes without exceptions, the transaction is committed.
             # If this commit fails, or if the body of the with statement raises an uncaught exception, the transaction is rolled back
             conn.executescript(query)
+            # conn.cursor().lastrowid
             # cursor.commit()
 
     def insert_into_table(self, dataframe, table_name, if_exixts="append"):
