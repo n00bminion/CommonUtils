@@ -1,5 +1,7 @@
 from functools import singledispatch
 
+SQL_COMPARATOR = {">", ">=", "<", "<=", "=", "!=", "<>"}
+
 
 # dodgy black formatting so turning formatting off here
 # fmt: off
@@ -36,8 +38,6 @@ def _iter(filter, column):
 
 @_transform_kv_to_clause.register(dict)
 def _dict(filter, column):
-    sql_comparator = {">", ">=", "<", "<=", "=", "!=", "<>"}
-
     non_str_comparator = [
         comparator for comparator in filter.keys() if not isinstance(column, str)
     ]
@@ -46,8 +46,8 @@ def _dict(filter, column):
     ), f"Keys in {filter} represent comparators and should be of type str"
 
     # difference between 2 sets
-    rogue_comparator = filter.keys() - sql_comparator
-    assert len(rogue_comparator) == 0, f"{rogue_comparator} sql comparator(s) are not allowed. Allowed comparators are {sql_comparator}"
+    rogue_comparator = filter.keys() - SQL_COMPARATOR
+    assert len(rogue_comparator) == 0, f"{rogue_comparator} sql comparator(s) are not allowed. Allowed comparators are {SQL_COMPARATOR}"
 
     # I should probably check the value here but cbb
     return [f"{column} {comparator} {value}" for comparator, value in filter.items()]
