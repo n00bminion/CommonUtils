@@ -168,18 +168,19 @@ def read_file(
             "Update SUPPORTED_FILE_EXTENSION in common_utils.io_handler.file to add support for this file extension."
         )
 
-    if function.__module__.split(".")[0] == "pandas":
-        return function(file_path, **kwargs)
+    if function:
+        if function.__module__.split(".")[0] == "pandas":
+            return function(file_path, **kwargs)
+
+    if file_path.suffix in [".pkl", ".pickle"] and "b" not in open_mode:
+        new_open_mode = open_mode + "b"
+        # ensure binary mode for pickle files
+        print(
+            f"Updated open_mode from '{open_mode}' to '{new_open_mode}' for pickle file reading"
+        )
+        open_mode = new_open_mode
 
     try:
-        if file_path.suffix in [".pkl", ".pickle"] and "b" not in open_mode:
-            new_open_mode = open_mode + "b"
-            # ensure binary mode for pickle files
-            print(
-                f"Updated open_mode from '{open_mode}' to '{new_open_mode}' for pickle file reading"
-            )
-            open_mode = new_open_mode
-
         with open(file_path, mode=open_mode, encoding=file_encoding) as file_obj:
             return (
                 function(file_obj, **kwargs)
