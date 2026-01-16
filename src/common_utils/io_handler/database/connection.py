@@ -11,6 +11,8 @@ from sqlalchemy import text
 from common_utils import __name__ as pkg_name
 from common_utils.io_handler import file
 from common_utils.io_handler.database.query import QueryParser
+from common_utils._pkg_utils import _read_internal_resource
+
 
 _PATH_LIST = Path(__file__).parts
 _RESOURCE_PATH = "/".join(
@@ -242,13 +244,13 @@ class PostgresConnection(DatabaseConnection, connection_engine="postgres"):
         )
 
     def get_all_objects(self):
-        sql = file._read_internal_resource(
+        sql = _read_internal_resource(
             f"{_RESOURCE_PATH}/{self.connection_engine}/get_all_objects.sql"
         )
         return self.select_into_dataframe(sql)[ALL_OBJECTS_REQUIRED_COLUMNS]
 
     def get_table_details(self, table_name, schema_name):
-        sql = file._read_internal_resource(
+        sql = _read_internal_resource(
             f"{_RESOURCE_PATH}/{self.connection_engine}/get_object_details.sql"
         ).format(
             schema=schema_name,
@@ -297,7 +299,7 @@ class SqliteConnection(DatabaseConnection, connection_engine="sqlite"):
         )
 
     def get_all_objects(self):
-        sql = file._read_internal_resource(
+        sql = _read_internal_resource(
             f"{_RESOURCE_PATH}/{self.connection_engine}/get_all_objects.sql"
         )
         all_obj = self.select_into_dataframe(sql)
@@ -308,7 +310,7 @@ class SqliteConnection(DatabaseConnection, connection_engine="sqlite"):
         ]
 
     def get_table_details(self, table_name):
-        sql = file._read_internal_resource(
+        sql = _read_internal_resource(
             f"{_RESOURCE_PATH}/{self.connection_engine}/get_object_details.sql"
         ).format(
             table_name=table_name,

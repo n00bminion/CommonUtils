@@ -4,7 +4,7 @@ from common_utils.io_handler.external import get_request
 from common_utils.data_handler.array import chunk_iter
 from common_utils.format_handler.typography import convert_camel_to_snake_case
 from common_utils.cache_handler.file_cache import cache_to_file
-from common_utils.io_handler.file import _read_internal_resource
+from common_utils._pkg_utils import _read_internal_resource
 
 
 @cache_to_file(days_to_keep=30)

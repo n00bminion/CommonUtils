@@ -1,6 +1,10 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
+def use_multi_processing():
+    raise NotImplementedError("Multi-processing is not implemented yet.")
+
+
 def use_multi_threading(
     function: callable, args: list[tuple], timeout: int = None, max_workers: int = None
 ) -> dict:

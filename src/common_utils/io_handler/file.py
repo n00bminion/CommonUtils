@@ -1,5 +1,3 @@
-from common_utils import __name__ as pkg_name
-import importlib.resources as resources
 from pathlib import Path
 import shutil
 import json
@@ -8,6 +6,12 @@ import tomllib
 import pypdf
 import pandas as pd
 import os
+import pickle
+
+
+class UnsupportedFileExtensionError(Exception):
+    pass
+
 
 # anything that's not implemented is defaulted to .read()/.write()
 SUPPORTED_FILE_EXTENSION = {
@@ -19,6 +23,7 @@ SUPPORTED_FILE_EXTENSION = {
     ".json": dict(
         read=json.load,
         write=json.dump,
+        pandas_write="to_json",
     ),
     ".toml": dict(
         read=tomllib.load,
@@ -34,23 +39,25 @@ SUPPORTED_FILE_EXTENSION = {
     # use pandas to write so these get treated differently
     ".parquet": dict(
         read=pd.read_parquet,
-        write="to_parquet",
+        pandas_write="to_parquet",
     ),
     ".pkl": dict(
         read=pd.read_pickle,
-        write="to_pickle",
+        pandas_write="to_pickle",
+        write=pickle.dump,
     ),
     ".pickle": dict(
         read=pd.read_pickle,
-        write="to_pickle",
+        pandas_write="to_pickle",
+        write=pickle.dump,
     ),
     ".csv": dict(
         read=pd.read_csv,
-        write="to_csv",
+        pandas_write="to_csv",
     ),
     ".xlsx": dict(
         read=pd.read_excel,
-        write="to_excel",
+        pandas_write="to_excel",
     ),
 }
 
@@ -82,7 +89,9 @@ def prepare_file_path(file_path):
             if parent_dir.is_relative_to(drive_path):
                 break
         else:
-            raise ValueError(f"{save_path} path should start with {drive_path}")
+            raise ValueError(
+                f"{save_path} path should start with either '{c_drive}' or '{d_drive}'"
+            )
 
     if operating_system == "linux":
         raise NotImplementedError(
@@ -93,54 +102,6 @@ def prepare_file_path(file_path):
     parent_dir.mkdir(parents=True, exist_ok=True)
 
     return save_path
-
-
-def read_file(
-    file_path, build_parent_dir=False, open_mode="r", file_encoding=None, **kwargs
-):
-    """
-    Read file and build the parent directories if needed.
-
-    Args:
-        file_path: string file path, can be relative or absolute
-        build_parent_dir: boolean, set to true to build parent dirs otherwise it's defaulted to False
-        open_mode: string mode to open file to write to, it's defaulted to "w"
-        file_encoding: string encoding to open file to write to, it's defaulted to None
-        **kwargs: Keyword arguments that can be passed in which will be used in the function reading the file
-
-    Returns:
-        File content
-
-    """
-    file_path = prepare_file_path(file_path) if build_parent_dir else Path(file_path)
-
-    allowed_file_reader_extension = {
-        k: v.get("read") for k, v in SUPPORTED_FILE_EXTENSION.items()
-    }
-
-    with open(file_path, mode=open_mode, encoding=file_encoding) as file_obj:
-        try:
-            function = allowed_file_reader_extension.get(file_path.suffix)
-        except KeyError:
-            raise KeyError(
-                f"File with extension '{file_path.suffix}' is not supported."
-                f"The allowed extension are: {list(allowed_file_reader_extension.keys())}"
-            )
-        return function(file_obj, **kwargs) if function is not None else file_obj.read()
-
-
-def _read_internal_resource(relative_file_path):
-    """
-    Read local resources files in this module. Not to be used outside
-
-    Args:
-        relative_file_path: relative file path (from root) of the resource file
-
-    Return:
-        File content
-    """
-    # read resources/file from files in the current module
-    return read_file(resources.files(pkg_name) / relative_file_path)
 
 
 def remove_file(file_path):
@@ -175,6 +136,62 @@ def remove_dir(dir_path):
     raise NotADirectoryError(f"{dir_path} is not a directory")
 
 
+def read_file(
+    file_path, build_parent_dir=False, open_mode="r", file_encoding=None, **kwargs
+):
+    """
+    Read file and build the parent directories if needed.
+
+    Args:
+        file_path: string file path, can be relative or absolute
+        build_parent_dir: boolean, set to true to build parent dirs otherwise it's defaulted to False
+        open_mode: string mode to open file to write to, it's defaulted to "w"
+        file_encoding: string encoding to open file to write to, it's defaulted to None
+        **kwargs: Keyword arguments that can be passed in which will be used in the function reading the file
+
+    Returns:
+        File content
+
+    """
+    file_path = prepare_file_path(file_path) if build_parent_dir else Path(file_path)
+
+    allowed_file_reader_extension = {
+        k: v.get("read") for k, v in SUPPORTED_FILE_EXTENSION.items()
+    }
+
+    try:
+        function = allowed_file_reader_extension[file_path.suffix]
+    except KeyError:
+        raise UnsupportedFileExtensionError(
+            f"File with extension '{file_path.suffix}' is not supported for file reading. "
+            f"The allowed extension are: {list(allowed_file_reader_extension.keys())}. "
+            "Update SUPPORTED_FILE_EXTENSION in common_utils.io_handler.file to add support for this file extension."
+        )
+
+    if function.__module__.split(".")[0] == "pandas":
+        return function(file_path, **kwargs)
+
+    try:
+        if file_path.suffix in [".pkl", ".pickle"] and "b" not in open_mode:
+            new_open_mode = open_mode + "b"
+            # ensure binary mode for pickle files
+            print(
+                f"Updated open_mode from '{open_mode}' to '{new_open_mode}' for pickle file reading"
+            )
+            open_mode = new_open_mode
+
+        with open(file_path, mode=open_mode, encoding=file_encoding) as file_obj:
+            return (
+                function(file_obj, **kwargs)
+                if function is not None
+                else file_obj.read()
+            )
+
+    except Exception as e:
+        print(f"Unable to read {file_path}")
+        raise e
+
+
 def save_to_file(
     content,
     file_path,
@@ -206,32 +223,44 @@ def save_to_file(
         k: v.get("write") for k, v in SUPPORTED_FILE_EXTENSION.items()
     }
 
+    allowed_pandas_file_writer_extension = {
+        k: v.get("pandas_write")
+        for k, v in SUPPORTED_FILE_EXTENSION.items()
+        if v.get("pandas_write") is not None
+    }
+
     if isinstance(content, pd.DataFrame):
-        cls_method = allowed_file_writer_extension.get(file_path.suffix)
+        try:
+            cls_method = allowed_pandas_file_writer_extension[file_path.suffix]
+        except KeyError:
+            raise UnsupportedFileExtensionError(
+                f"File with extension '{file_path.suffix}' is not supported for pandas DataFrame writing. "
+                f"The allowed extension are: {list(allowed_pandas_file_writer_extension.keys())}. "
+                "Update SUPPORTED_FILE_EXTENSION in common_utils.io_handler.file to add support for this file extension."
+            )
+
         getattr(content, cls_method)(file_path, **kwargs)
 
     else:
         try:
+            if file_path.suffix in [".pkl", ".pickle"] and "b" not in open_mode:
+                new_open_mode = open_mode + "b"
+                # ensure binary mode for pickle files
+                print(
+                    f"Updated open_mode from '{open_mode}' to '{new_open_mode}' for pickle file reading"
+                )
+                open_mode = new_open_mode
+
             with open(
                 file=file_path, mode=open_mode, encoding=file_encoding
             ) as file_obj:
                 try:
-                    function = allowed_file_writer_extension.get(file_path.suffix)
+                    function = allowed_file_writer_extension[file_path.suffix]
                 except KeyError:
-                    raise KeyError(
-                        f"File with extension '{file_path.suffix}' is not supported."
-                        f"The allowed extension are: {list(allowed_file_writer_extension.keys())}"
-                    )
-
-                # account for when function derived from allowed_file_writer_extension
-                # is a class method name from pandas and not actually a function
-                try:
-                    if (not callable(function)) and (isinstance(function, str)):
-                        raise
-                except Exception:
-                    raise TypeError(
-                        f"The content passed in needs to be a pandas DataFrame and not {type(content)}. "
-                        "Convert to a dataframe first before saving the data"
+                    raise UnsupportedFileExtensionError(
+                        f"File with extension '{file_path.suffix}' is not supported for file writing. "
+                        f"The allowed extension are: {list(allowed_pandas_file_writer_extension.keys())}. "
+                        "Update SUPPORTED_FILE_EXTENSION in common_utils.io_handler.file to add support for this file extension."
                     )
 
                 return (
@@ -241,19 +270,21 @@ def save_to_file(
                 )
 
         # always wanna delete file if fail
-        except Exception:
+        except Exception as e:
             print(f"Unable to write to {file_path}. Removing created file place holder")
             remove_file(file_path=file_path)
-            raise
+            raise e
 
 
 if __name__ == "__main__":
     # read_file("test.py")
     # remove_dir("test")
-    save_to_file(
-        pd.DataFrame({"a": [1, 2, 3]}),
-        "abc.parquet",
-        engine="pyarrow",
-    )
+    # save_to_file(
+    #     pd.DataFrame({"a": [1, 2, 3]}),
+    #     "abc.parquet",
+    #     engine="pyarrow",
+    # )
 
-    save_to_file("asdfadsfad", "xyz.adsf")  # this will fail
+    # save_to_file("asdfadsfad", "xyz.adsf")  # this will fail
+
+    print(read_file("abc.parquet"))
