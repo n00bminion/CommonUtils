@@ -16,6 +16,23 @@ def _prepare_cache_file_name(
     args: tuple,
     kwargs: dict,
 ) -> str:
+    # convert list to tuple to do the hashing
+    # tuple of arguments
+    if args:
+        args = (tuple(arg) if isinstance(arg, list) else arg for arg in args)
+        print(
+            "non keyword argument(s) of type 'list' is temporarily converted to 'tuple' "
+            "to allow for hashing of arguments to derive cache file name"
+        )
+
+    # dict of keyword arguments
+    if kwargs:
+        kwargs = {k: tuple(v) if isinstance(v, list) else v for k, v in kwargs.items()}
+        print(
+            "keyword argument(s) of type 'list' is temporarily converted to 'tuple' "
+            "to allow for hashing of keyword arguments to derive cache file name"
+        )
+
     return (
         COMMON_SEPARATOR.join(
             (
