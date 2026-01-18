@@ -21,7 +21,7 @@ def _prepare_cache_file_name(
     if args:
         args = (tuple(arg) if isinstance(arg, list) else arg for arg in args)
         print(
-            "non keyword argument(s) of type 'list' is temporarily converted to 'tuple' "
+            f"non keyword argument(s) of type 'list' is temporarily converted to 'tuple' for function '{function_name}' "
             "to allow for hashing of arguments to derive cache file name"
         )
 
@@ -29,7 +29,7 @@ def _prepare_cache_file_name(
     if kwargs:
         kwargs = {k: tuple(v) if isinstance(v, list) else v for k, v in kwargs.items()}
         print(
-            "keyword argument(s) of type 'list' is temporarily converted to 'tuple' "
+            f"keyword argument(s) of type 'list' is temporarily converted to 'tuple' for function '{function_name}' "
             "to allow for hashing of keyword arguments to derive cache file name"
         )
 
